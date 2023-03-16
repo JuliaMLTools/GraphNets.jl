@@ -18,7 +18,7 @@ function GNGraphBatch(adj_mats)
         padded_adj_mats,
         getsrcnode2edgebroadcaster(padded_adj_mats),
         getdstnode2edgebroadcaster(padded_adj_mats),
-        getgraphbroadcaster(padded_adj_mats),
+        getgraph2edgebroadcaster(padded_adj_mats),
         getedge2nodebroadcaster(padded_adj_mats),
         getgraph2nodebroadcaster(padded_adj_mats),
         getedge2graphbroadcaster(adj_mats, PN),
@@ -67,7 +67,7 @@ function getgraph2nodebroadcaster(padded_adj_mats)
     ones(1, PN, B)
 end
 
-function getgraphbroadcaster(padded_adj_mats)
+function getgraph2edgebroadcaster(padded_adj_mats)
     PN,_,B = size(padded_adj_mats)
     PN2 = PN^2
     ones(1, PN2, B)
