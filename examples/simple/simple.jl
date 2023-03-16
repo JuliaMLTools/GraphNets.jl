@@ -14,7 +14,9 @@ block = GNBlock(
 ################################################
 
 
+####
 # Example #1: GNN input graphs have same structure (same graph), but different features
+####
 
 adj_mat = [
     1 0 1;
@@ -72,21 +74,21 @@ graphs = GNGraphBatch(adj_mats)
 
 N1 = size(adj_mat_1, 1) # Number of nodes in graph 1
 N2 = size(adj_mat_2, 1) # Number of nodes in graph 2
-NBS = maximum([N1,N2])
 
-# Edge features for graph 1
-edge_features_1 = rand(Float32, X_DE, N1^2) # (X_DE, N1^2)
-
-# Edge features for graph 2
-edge_features_2 = rand(Float32, X_DE, N2^2) # (X_DE, N2^2)
+edge_features = paddedbatch(
+    [
+        # Edge features for graph 1
+        rand(Float32, X_DE, N1^2), # (X_DE, N1^2)
+        
+        # Edge features for graph 2
+        rand(Float32, X_DE, N2^2), # (X_DE, N2^2)
+    ]
+)
 
 # EBS (edge block size) is the maximum number of edges of any graph in the batch
-edge_features_vec = [edge_features_1, edge_features_2]
-EBS = maximum(size.(edge_features_vec, 2))
-edge_features_padded = padmat.(edge_features_vec, X_DE, EBS)
-
-# Padded batch of edge features
-edge_features = cat(edge_features_padded...; dims=3) #(X_DE, EBS, G)
+EBS = size(edge_features, 2)
+# NBS (node block size) is the maximum number of nodes of any graph in the batch
+NBS = maximum([N1,N2])
 
 x = (
     graphs=graphs,

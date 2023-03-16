@@ -13,7 +13,7 @@ func(x) = 2x + 1
 include("imports.jl")
 
 include("util.jl")
-export padcat, padmat
+export padcat, padmat, paddedbatch
 
 include("gngraphbatch.jl")
 export GNGraphBatch, padadjmats, getsrcnode2edgebroadcaster, getdstnode2edgebroadcaster

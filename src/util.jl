@@ -19,3 +19,11 @@ function padmat(m::AbstractMatrix, pd1, pd2)
     padded[1:d1, 1:d2] .= m
     padded
 end
+
+function paddedbatch(v)
+    @assert (isone∘length∘unique)(size.(v, 1))
+    d1 = size(v[1], 1)
+    d2 = maximum(size.(v, 2))
+    padded = padmat.(v, d1, d2)
+    reduce((a,b)->cat(a,b; dims=3), padded)
+end
