@@ -125,3 +125,53 @@ getgraphfeatures(out, 1)
 getedgefeatures(out, 2)
 getnodefeatures(out, 2)
 getgraphfeatures(out, 2)
+
+
+
+####
+# Example #3: Sequential GNN blocks
+####
+
+input_dims = (0, 2, 0)
+embedded_dims = (10, 5, 3)
+output_dims = (0, 0, 1)
+
+n_core_blocks = 2
+
+struct GNNModel
+    encoder
+    core_list
+    decoder
+end
+
+function GNNModel()
+    GNNModel(
+        GNBlock(input_dims => embedded_dims),
+        GNCoreList([GNCore(embedded_dims) for _ in 1:n_core_blocks]),
+        GNBlock(embedded_dims => output_dims),
+    )
+end
+
+function (m::GNNModel)(x)
+    (m.decoder ∘ m.core_list ∘ m.encoder)(x)
+end
+
+m = GNNModel()
+
+x = (
+    graphs = GNGraphBatch([[
+        1 0 1;
+        1 1 0;
+        0 0 1;
+    ]]),
+    ef = nothing,
+    nf = rand(Float32, 2, 3, 1),
+    gf = nothing,
+)
+
+out = m(x)
+
+getedgefeatures(out, 1)
+getnodefeatures(out, 1)
+getgraphfeatures(out, 1)
+
