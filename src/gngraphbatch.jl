@@ -1,4 +1,5 @@
 struct GNGraphBatch
+    adj_mats
     padded_adj_mats # (PN,PN,B)
     srcnode2edge_broadcaster # (PN, PN^2, B)
     dstnode2edge_broadcaster # (PN, PN^2, B)
@@ -15,6 +16,7 @@ function GNGraphBatch(adj_mats)
     padded_adj_mats = padadjmats(adj_mats)
     PN = size(padded_adj_mats, 1)
     GNGraphBatch(
+        adj_mats,
         padded_adj_mats,
         getsrcnode2edgebroadcaster(padded_adj_mats),
         getdstnode2edgebroadcaster(padded_adj_mats),

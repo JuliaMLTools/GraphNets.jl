@@ -27,3 +27,32 @@ function paddedbatch(v)
     padded = padmat.(v, d1, d2)
     reduce((a,b)->cat(a,b; dims=3), padded)
 end
+
+function getedgefeatures(t::Tuple, graph_idx)
+    graphs, ef, _, _ = t
+    getedgefeatures(graphs.adj_mats, graph_idx, ef)
+end
+
+function getnodefeatures(t::Tuple, graph_idx)
+    graphs, _, nf, _ = t
+    getnodefeatures(graphs.adj_mats, graph_idx, nf)
+end
+
+function getgraphfeatures(t::Tuple, graph_idx)
+    graphs, _, _, gf = t
+    getgraphfeatures(graphs.adj_mats, graph_idx, gf)
+end
+
+function getedgefeatures(adj_mats, graph_idx, batched_ef)
+    adj_mat = adj_mats[graph_idx]
+    edge_idx = findall(isone,adj_mat[:])
+    batched_ef[:,edge_idx,graph_idx]
+end
+
+function getnodefeatures(adj_mats, graph_idx, batched_nf)
+    batched_nf[:,:,graph_idx]
+end
+
+function getgraphfeatures(adj_mats, graph_idx, batched_gf)
+    batched_gf[:,1,graph_idx]
+end

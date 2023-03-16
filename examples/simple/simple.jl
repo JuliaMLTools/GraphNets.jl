@@ -5,9 +5,9 @@ using GraphNets
 X_DE = 10 # Input feature dimension of edges
 X_DN = 0 # No node input data (dimension zero)
 X_DG = 0 # No graph input data (dimension zero)
-Y_DE = 1 # Output feature dimension of edges
-Y_DN = 2 # Output feature dimension of nodes
-Y_DG = 3 # Output feature dimension of graphs
+Y_DE = 3 # Output feature dimension of edges
+Y_DN = 4 # Output feature dimension of nodes
+Y_DG = 5 # Output feature dimension of graphs
 block = GNBlock(
     (X_DE,X_DN,X_DG) => (Y_DE,Y_DN,Y_DG)
 )
@@ -45,21 +45,33 @@ x = (
     graph_features=nothing,
 )
 
-_, y_e, y_n, y_g = block(x)
+_, y_e, y_n, y_g = out = block(x)
 @assert size(y_e) == (Y_DE, N^2, G)
 @assert size(y_n) == (Y_DN, N, G)
 @assert size(y_g) == (Y_DG, 1, G)
 
+# Get the graph edges of the 1st graph
+getedgefeatures(out, 1)
+getnodefeatures(out, 1)
+getgraphfeatures(out, 1)
+
+# Get the graph edges of the 2nd graph
+getedgefeatures(out, 2)
+getnodefeatures(out, 2)
+getgraphfeatures(out, 2)
 
 
 
+####
 # Example #2: GNN input graphs have different structures (different graphs).
+####
 
 adj_mat_1 = [
     1 0 1;
     1 1 0;
     0 0 1;
 ] # Adjacency matrix for graph 1
+E1 = sum(adj_mat_1[:] .== 1)
 
 adj_mat_2 = [
     0 1 0 1;
@@ -67,6 +79,7 @@ adj_mat_2 = [
     1 1 0 1;
     0 0 1 0;
 ] # Adjacency matrix for graph 2
+E2 = sum(adj_mat_2[:] .== 1)
 
 adj_mats = [adj_mat_1, adj_mat_2]
 G = length(adj_mats) # Number of graphs
@@ -74,6 +87,7 @@ graphs = GNGraphBatch(adj_mats)
 
 N1 = size(adj_mat_1, 1) # Number of nodes in graph 1
 N2 = size(adj_mat_2, 1) # Number of nodes in graph 2
+
 
 edge_features = paddedbatch(
     [
@@ -88,7 +102,7 @@ edge_features = paddedbatch(
 # EBS (edge block size) is the maximum number of edges of any graph in the batch
 EBS = size(edge_features, 2)
 # NBS (node block size) is the maximum number of nodes of any graph in the batch
-NBS = maximum([N1,N2])
+NBS = maximum(size.([adj_mat_1,adj_mat_2], 1))
 
 x = (
     graphs=graphs,
@@ -97,7 +111,17 @@ x = (
     graph_features=nothing,
 )
 
-_, y_e, y_n, y_g = block(x)
+_, y_e, y_n, y_g = out = block(x)
 @assert size(y_e) == (Y_DE, EBS, G)
 @assert size(y_n) == (Y_DN, NBS, G)
 @assert size(y_g) == (Y_DG, 1, G)
+
+# Get the edge features of the 1st graph
+getedgefeatures(out, 1)
+getnodefeatures(out, 1)
+getgraphfeatures(out, 1)
+
+# Get the graph edges of the 2nd graph
+getedgefeatures(out, 2)
+getnodefeatures(out, 2)
+getgraphfeatures(out, 2)
