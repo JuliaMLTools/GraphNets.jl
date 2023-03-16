@@ -29,17 +29,17 @@ function paddedbatch(v)
 end
 
 function getedgefeatures(t::Tuple, graph_idx)
-    graphs, ef, _, _ = t
+    (; graphs, ef) = t
     getedgefeatures(graphs.adj_mats, graph_idx, ef)
 end
 
 function getnodefeatures(t::Tuple, graph_idx)
-    graphs, _, nf, _ = t
+    (; graphs, nf) = t
     getnodefeatures(graphs.adj_mats, graph_idx, nf)
 end
 
 function getgraphfeatures(t::Tuple, graph_idx)
-    graphs, _, _, gf = t
+    (; graphs, gf) = t
     getgraphfeatures(graphs.adj_mats, graph_idx, gf)
 end
 

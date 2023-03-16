@@ -42,9 +42,9 @@ FeedForward(d, dropout) = Chain(
 
 function (m::GNFeedForward)(x)
     (
-        x[1],
-        m.eff(x[2]),
-        m.nff(x[3]),
-        m.gff(x[4]),
+        graphs = x.graphs,
+        ef = m.eff(x.ef),
+        nf = m.nff(x.nf),
+        gf = m.gff(x.gf),
     )
 end

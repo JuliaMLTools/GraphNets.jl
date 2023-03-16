@@ -180,10 +180,10 @@ end
     N2 = N^2
     adj_mats = [rand(0:1, N, N) for _ in 1:B]
     x = (
-        graphs=GNGraphBatch(adj_mats),
-        edge_features=Float32.(rand(X_DE,N2,B)),
-        node_features=nothing, 
-        graph_features=nothing
+        graphs = GNGraphBatch(adj_mats),
+        ef = Float32.(rand(X_DE,N2,B)),
+        nf = nothing, 
+        gf = nothing,
     )
     block = GNBlock(from=>to)
     _, y_e, y_n, y_g = block(x)
@@ -229,10 +229,10 @@ end
     N2 = N^2
     adj_mats = [rand(0:1, N, N) for _ in 1:B]
     x = (
-        graphs=GNGraphBatch(adj_mats),
-        edge_features=rand(Float32, DE, N2, B),
-        node_features=rand(Float32, DN, N, B), 
-        graph_features=rand(Float32, DG, 1, B)
+        graphs = GNGraphBatch(adj_mats),
+        ef = rand(Float32, DE, N2, B),
+        nf = rand(Float32, DN, N, B), 
+        gf = rand(Float32, DG, 1, B)
     )
     core = GNCore(dims)
     _, y_e, y_n, y_g = core(x)
@@ -247,10 +247,10 @@ end
     N2 = N^2
     adj_mats = [rand(0:1, N, N) for _ in 1:B]
     x = (
-        graphs=GNGraphBatch(adj_mats),
-        edge_features=rand(Float32, DE, N2, B),
-        node_features=rand(Float32, DN, N, B), 
-        graph_features=rand(Float32, DG, 1, B)
+        graphs = GNGraphBatch(adj_mats),
+        ef = rand(Float32, DE, N2, B),
+        nf = rand(Float32, DN, N, B), 
+        gf = rand(Float32, DG, 1, B)
     )
     #
     n_core_blocks = 3

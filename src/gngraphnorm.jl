@@ -19,11 +19,10 @@ function GNGraphNorm(dims; dropout=0)
 end
 
 function (m::GNGraphNorm)(x)
-    graphs, ef, nf, gf = x
     (
-        graphs,
-        m.edgeln(ef),
-        m.nodeln(nf),
-        m.graphln(gf),
+        graphs = x.graphs,
+        ef = m.edgeln(x.ef),
+        nf = m.nodeln(x.nf),
+        gf = m.graphln(x.gf),
     )
 end

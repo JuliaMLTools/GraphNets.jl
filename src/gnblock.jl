@@ -31,16 +31,9 @@ function GNBlock(from_to::Pair; dropout=0)
 end
 
 function (m::GNBlock)(x)
-    (graphs, edge_features, node_features, graph_features) = x
-    uv, v, g = edge_features, node_features, graph_features
-    edge_input = getedgefninput(
-        graphs,
-        edge_features,
-        node_features,
-        graph_features,
-    )
-    h_uv = (m.edgefn ∘ getedgefninput)(graphs, uv, v, g)
-    h_u = (m.nodefn ∘ getnodefninput)(graphs, h_uv, v, g)
-    h_g = (m.graphfn ∘ getgraphfninput)(graphs, h_uv, h_u, g)
-    (graphs, h_uv, h_u, h_g)
+    (; graphs, ef, nf, gf) = x
+    h_ef = (m.edgefn ∘ getedgefninput)(graphs, ef, nf, gf)
+    h_nf = (m.nodefn ∘ getnodefninput)(graphs, h_ef, nf, gf)
+    h_gf = (m.graphfn ∘ getgraphfninput)(graphs, h_ef, h_nf, gf)
+    (graphs=graphs, ef=h_ef, nf=h_nf, gf=h_gf)
 end

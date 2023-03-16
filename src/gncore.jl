@@ -42,9 +42,9 @@ end
 
 function graphnetadd(a, b)
     (
-        a[1],
-        a[2] .+ b[2],
-        a[3] .+ b[3],
-        a[4] .+ b[4],
+        graphs = a.graphs,
+        ef = a.ef .+ b.ef,
+        nf = a.nf .+ b.nf,
+        gf = a.gf .+ b.gf,
     )
 end

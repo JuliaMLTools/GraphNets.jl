@@ -39,10 +39,10 @@ edge_features_2 = rand(Float32, X_DE, N^2) # (X_DE, N^2)
 edge_features = cat(edge_features_1, edge_features_2; dims=3) # (X_DE, N^2, G) 
 
 x = (
-    graphs=graphs,
-    edge_features=edge_features,
-    node_features=nothing,
-    graph_features=nothing,
+    graphs = graphs,
+    ef = edge_features,
+    nf = nothing,
+    gf = nothing,
 )
 
 _, y_e, y_n, y_g = out = block(x)
@@ -105,10 +105,10 @@ EBS = size(edge_features, 2)
 NBS = maximum(size.([adj_mat_1,adj_mat_2], 1))
 
 x = (
-    graphs=graphs,
-    edge_features=edge_features,
-    node_features=nothing,
-    graph_features=nothing,
+    graphs = graphs,
+    ef = edge_features,
+    nf = nothing,
+    gf = nothing,
 )
 
 _, y_e, y_n, y_g = out = block(x)

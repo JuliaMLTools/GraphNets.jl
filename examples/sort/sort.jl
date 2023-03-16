@@ -37,10 +37,10 @@ end
 
 function (m::GNModel)(graphs, idx, targets=nothing)
     featured_graphs = (
-        graphs=graphs,
-        edge_features=nothing,
-        node_features=m.node_embedding_table(idx),
-        graph_features=nothing,
+        graphs = graphs,
+        ef = nothing,
+        nf = m.node_embedding_table(idx),
+        gf = nothing,
     )
     encoded = m.encoder(featured_graphs)
     x = m.core(encoded)
