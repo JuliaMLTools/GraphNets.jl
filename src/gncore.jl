@@ -29,16 +29,22 @@ function GNCore(dims; dropout=0)
     @assert any(dims .> (0,0,0))
     GNCore(
         GNBlock(dims=>dims; dropout=dropout),
-        nothing,
-        nothing,
-        nothing,
-        # GNFeedForward(dims; dropout=dropout),
-        # GNGraphNorm(dims),
-        # GNGraphNorm(dims),
+        GNFeedForward(dims; dropout=dropout),
+        GNGraphNorm(dims),
+        GNGraphNorm(dims),
     )
 end
 
 function (m::GNCore)(x)
-    m.block(x)
+    graphnetadd(graphnetadd(x, m.block(m.gn1(x))), m.ffwd(m.gn2(x)))
     # x + m.gnlayer(m.gn1(x)) + m.ffwd(m.gn2(x))
+end
+
+function graphnetadd(a, b)
+    (
+        a[1],
+        a[2] .+ b[2],
+        a[3] .+ b[3],
+        a[4] .+ b[4],
+    )
 end

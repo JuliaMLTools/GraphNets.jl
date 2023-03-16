@@ -25,6 +25,9 @@ export getnodefninput
 include("graphfninput.jl")
 export getgraphfninput
 
+include("gnfeedforward.jl")
+export GNFeedForward
+
 include("gnblock.jl")
 export GNBlock
 
@@ -33,6 +36,9 @@ export GNCore
 
 include("gncorelist.jl")
 export GNCoreList
+
+include("gngraphnorm.jl")
+export GNGraphNorm
 
 import SnoopPrecompile
 include("other/precompile.jl")

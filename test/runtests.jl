@@ -181,7 +181,7 @@ end
     adj_mats = [rand(0:1, N, N) for _ in 1:B]
     x = (
         graphs=GNGraphBatch(adj_mats),
-        edge_features=Float32.(rand(X_DE,N2,B)), 
+        edge_features=Float32.(rand(X_DE,N2,B)),
         node_features=nothing, 
         graph_features=nothing
     )
