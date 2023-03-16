@@ -28,6 +28,12 @@ export getgraphfninput
 include("gnblock.jl")
 export GNBlock
 
+include("gncore.jl")
+export GNCore
+
+include("gncorelist.jl")
+export GNCoreList
+
 import SnoopPrecompile
 include("other/precompile.jl")
 

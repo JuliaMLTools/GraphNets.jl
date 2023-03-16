@@ -28,7 +28,7 @@ function GNModel(vocab_size, in_dims, core_dims, out_dims; n_core_blocks=2)
     GNModel(
         Embedding(vocab_size=>node_in_size),
         GNBlock(in_dims, core_dims),
-        GNCore([GNCoreBlock(core_dims; dropout=dropout) for _ in 1:n_core_blocks]),
+        GNCoreList([GNCore(core_dims; dropout=dropout) for _ in 1:n_core_blocks]),
         GraphLayerNorm(out_dims),
         Dense(edge_core_size=>edge_out_size),
         Dense(node_core_size=>node_out_size),

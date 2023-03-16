@@ -186,7 +186,7 @@ end
         graph_features=nothing
     )
     block = GNBlock(from=>to)
-    y_e, y_n, y_g = block(x)
+    _, y_e, y_n, y_g = block(x)
     @test size(y_e) == (Y_DE,N2,B)
     @test size(y_n) == (Y_DN,N,B)
     @test size(y_g) == (Y_DG,1,B)
@@ -221,4 +221,42 @@ end
     ]
     @test graphs.edge2node_broadcaster[:,:,1] == expected_1
     @test graphs.edge2node_broadcaster[:,:,2] == expected_2
+end
+
+@testset "GNCore" begin
+    dims = DE, DN, DG = (10,5,3)
+    N,B = 3,2
+    N2 = N^2
+    adj_mats = [rand(0:1, N, N) for _ in 1:B]
+    x = (
+        graphs=GNGraphBatch(adj_mats),
+        edge_features=rand(Float32, DE, N2, B),
+        node_features=rand(Float32, DN, N, B), 
+        graph_features=rand(Float32, DG, 1, B)
+    )
+    core = GNCore(dims)
+    _, y_e, y_n, y_g = core(x)
+    @test size(y_e) == (DE,N2,B)
+    @test size(y_n) == (DN,N,B)
+    @test size(y_g) == (DG,1,B)
+end
+
+@testset "GNCoreList" begin
+    dims = DE, DN, DG = (10,5,3)
+    N,B = 3,2
+    N2 = N^2
+    adj_mats = [rand(0:1, N, N) for _ in 1:B]
+    x = (
+        graphs=GNGraphBatch(adj_mats),
+        edge_features=rand(Float32, DE, N2, B),
+        node_features=rand(Float32, DN, N, B), 
+        graph_features=rand(Float32, DG, 1, B)
+    )
+    #
+    n_core_blocks = 3
+    core_list = GNCoreList([GNCore(dims) for _ in 1:n_core_blocks])
+    _, y_e, y_n, y_g = core_list(x)
+    @test size(y_e) == (DE,N2,B)
+    @test size(y_n) == (DN,N,B)
+    @test size(y_g) == (DG,1,B)
 end

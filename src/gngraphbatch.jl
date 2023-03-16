@@ -64,13 +64,13 @@ end
 
 function getgraph2nodebroadcaster(padded_adj_mats)
     PN,_,B = size(padded_adj_mats)
-    ones(1, PN, B)
+    ones(Float32, 1, PN, B)
 end
 
 function getgraph2edgebroadcaster(padded_adj_mats)
     PN,_,B = size(padded_adj_mats)
     PN2 = PN^2
-    ones(1, PN2, B)
+    ones(Float32, 1, PN2, B)
 end
 
 getsrcnode2edgebroadcaster(padded_adj_mats) = getnode2edgebroadcaster(padded_adj_mats)
@@ -81,7 +81,7 @@ function getnode2edgebroadcaster(padded_adj_mats, src_dst_op=identity)
     PN2 = PN^2
     idx = repeat(1:PN, 1, PN) |> src_dst_op
     masked_idx = padded_adj_mats .* idx
-    dst = zeros(PN,PN2,B)
+    dst = zeros(Float32, PN,PN2,B)
     for (slice_idx,slice) in enumerate(eachslice(masked_idx, dims=3))
         flat = @view slice[:]
         active_idx = findall(x->!iszero(x), flat)

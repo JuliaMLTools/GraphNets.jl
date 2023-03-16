@@ -8,7 +8,7 @@ end
 Functors.@functor GNBlock
 
 function GNBlock(from_to::Pair; dropout=0)
-    # GNHead(
+    # GNBlock(
     #     Dense(input_dim, head_size, bias=false),
     #     Dense(input_dim, head_size, bias=false),
     #     Dense(input_dim, head_size, bias=false),
@@ -42,5 +42,5 @@ function (m::GNBlock)(x)
     h_uv = (m.edgefn ∘ getedgefninput)(graphs, uv, v, g)
     h_u = (m.nodefn ∘ getnodefninput)(graphs, h_uv, v, g)
     h_g = (m.graphfn ∘ getgraphfninput)(graphs, h_uv, h_u, g)
-    (h_uv, h_u, h_g)
+    (graphs, h_uv, h_u, h_g)
 end
