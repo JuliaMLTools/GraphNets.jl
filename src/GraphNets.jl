@@ -14,10 +14,16 @@ include("imports.jl")
 include("util.jl")
 
 include("gngraphbatch.jl")
-export GNGraphBatch, padadjmats, getsrcnodebroadcaster, getdstnodebroadcaster
+export GNGraphBatch, padadjmats, getsrcnode2edgebroadcaster, getdstnode2edgebroadcaster
 
 include("edgefninput.jl")
 export getedgefninput
+
+include("nodefninput.jl")
+export getnodefninput
+
+include("graphfninput.jl")
+export getgraphfninput
 
 include("gnblock.jl")
 export GNBlock

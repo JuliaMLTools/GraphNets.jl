@@ -1,7 +1,7 @@
 using GraphNets
 using Test
 
-@testset "Test padadjmats" begin
+@testset "padadjmats" begin
     PN = 4
     adj_mats = [
         rand(0:1, 3, 3), 
@@ -12,7 +12,7 @@ using Test
     @test size(padded) == (PN,PN,B)
 end
 
-@testset "Test getsrcnodebroadcaster" begin
+@testset "getnode2edgebroadcaster" begin
     PN = 4
     PN2 = PN^2
     adj_mats = [
@@ -21,7 +21,7 @@ end
     ]
     B = length(adj_mats)
     padded = padadjmats(adj_mats)
-    broadcaster = getsrcnodebroadcaster(padded)
+    broadcaster = getsrcnode2edgebroadcaster(padded)
     @test size(broadcaster) == (PN,PN2,B)
 
     PN = 3
@@ -31,7 +31,7 @@ end
     adj_mats = [adj_mat1,adj_mat2]
     B = length(adj_mats)
     padded = padadjmats(adj_mats)
-    src_broadcaster = getsrcnodebroadcaster(padded)
+    src_broadcaster = getsrcnode2edgebroadcaster(padded)
     @test size(src_broadcaster) == (PN,PN2,B)
     @test src_broadcaster[:,:,1] == [
         1 0 0 0 0 0 1 0 0;
@@ -43,7 +43,7 @@ end
         0 0 0 0 0 0 0 1 0;
         0 0 1 0 0 1 0 0 0;
     ]
-    dst_broadcaster = getdstnodebroadcaster(padded)
+    dst_broadcaster = getdstnode2edgebroadcaster(padded)
     @test size(dst_broadcaster) == (PN,PN2,B)
     @test dst_broadcaster[:,:,1] == [
         1 1 0 0 0 0 0 0 0;
@@ -57,7 +57,7 @@ end
     ]
 end
 
-@testset "Test GNGraphBatch" begin
+@testset "GNGraphBatch" begin
     adj_mat1 = Float32.([1 0 1; 1 1 0; 0 0 1])
     adj_mat2 = Float32.([0 1 0; 0 0 1; 1 1 0])
     adj_mats = [adj_mat1,adj_mat2]
@@ -65,7 +65,7 @@ end
     @test !isnothing(batch)
 end
 
-@testset "Test getedgefninput (edge, node, and graph features)" begin
+@testset "getedgefninput (edge, node, and graph features)" begin
     adj_mat1 = Float32.([1 0 1; 1 1 0; 0 0 1])
     adj_mat2 = Float32.([0 1 0; 0 0 1; 1 1 0])
     adj_mats = [adj_mat1,adj_mat2]
@@ -83,7 +83,7 @@ end
     @test size(edge_fn_input) == (DIM_E+2DIM_N+DIM_G, PN2, B)
 end
 
-@testset "Test getedgefninput (graph features only)" begin
+@testset "getedgefninput (graph features only)" begin
     adj_mat1 = Float32.([1 0 1; 1 1 0; 0 0 1])
     adj_mat2 = Float32.([0 1 0; 0 0 1; 1 1 0])
     adj_mats = [adj_mat1,adj_mat2]
@@ -97,7 +97,7 @@ end
     @test size(edge_fn_input) == (DIM_G, PN2, B)
 end
 
-@testset "Test getedgefninput (node features only)" begin
+@testset "getedgefninput (node features only)" begin
     adj_mat1 = Float32.([1 0 1; 1 1 0; 0 0 1])
     adj_mat2 = Float32.([0 1 0; 0 0 1; 1 1 0])
     adj_mats = [adj_mat1,adj_mat2]
@@ -111,7 +111,7 @@ end
     @test size(edge_fn_input) == (2DIM_N, PN2, B)
 end
 
-@testset "Test getedgefninput (node and graph features)" begin
+@testset "getedgefninput (node and graph features)" begin
     adj_mat1 = Float32.([1 0 1; 1 1 0; 0 0 1])
     adj_mat2 = Float32.([0 1 0; 0 0 1; 1 1 0])
     adj_mats = [adj_mat1,adj_mat2]
@@ -127,7 +127,7 @@ end
     @test size(edge_fn_input) == (2DIM_N+DIM_G, PN2, B)
 end
 
-@testset "Test getedgefninput (edge features only)" begin
+@testset "getedgefninput (edge features only)" begin
     adj_mat1 = Float32.([1 0 1; 1 1 0; 0 0 1])
     adj_mat2 = Float32.([0 1 0; 0 0 1; 1 1 0])
     adj_mats = [adj_mat1,adj_mat2]
@@ -141,7 +141,7 @@ end
     @test size(edge_fn_input) == (DIM_E, PN2, B)
 end
 
-@testset "Test getedgefninput (edge and graph features)" begin
+@testset "getedgefninput (edge and graph features)" begin
     adj_mat1 = Float32.([1 0 1; 1 1 0; 0 0 1])
     adj_mat2 = Float32.([0 1 0; 0 0 1; 1 1 0])
     adj_mats = [adj_mat1,adj_mat2]
@@ -157,7 +157,7 @@ end
     @test size(edge_fn_input) == (DIM_E+DIM_G, PN2, B)
 end
 
-@testset "Test getedgefninput (edge features and node features)" begin
+@testset "getedgefninput (edge features and node features)" begin
     adj_mat1 = Float32.([1 0 1; 1 1 0; 0 0 1])
     adj_mat2 = Float32.([0 1 0; 0 0 1; 1 1 0])
     adj_mats = [adj_mat1,adj_mat2]
@@ -186,5 +186,39 @@ end
         graph_features=nothing
     )
     block = GNBlock(from=>to)
-    @test size(block(x)) == (Y_DE,N2,B)
+    y_e, y_n, y_g = block(x)
+    @test size(y_e) == (Y_DE,N2,B)
+    @test size(y_n) == (Y_DN,N,B)
+    @test size(y_g) == (Y_DG,1,B)
+end
+
+@testset "edge2nodebroadcaster" begin
+    adj_mat1 = Float32.([1 0 1; 1 1 0; 0 0 1])
+    adj_mat2 = Float32.([0 1 0; 0 0 1; 1 1 0])
+    adj_mats = [adj_mat1,adj_mat2]
+    graphs = GNGraphBatch(adj_mats)
+    expected_1 = [
+        1.0  0.0  0.0;
+        1.0  0.0  0.0;
+        0.0  0.0  0.0;
+        0.0  0.0  0.0;
+        0.0  1.0  0.0;
+        0.0  0.0  0.0;
+        0.0  0.0  1.0;
+        0.0  0.0  0.0;
+        0.0  0.0  1.0;
+    ]
+    expected_2 = [
+        0.0  0.0  0.0;
+        0.0  0.0  0.0;
+        1.0  0.0  0.0;
+        0.0  1.0  0.0;
+        0.0  0.0  0.0;
+        0.0  1.0  0.0;
+        0.0  0.0  0.0;
+        0.0  0.0  1.0;
+        0.0  0.0  0.0;
+    ]
+    @test graphs.edge2node_broadcaster[:,:,1] == expected_1
+    @test graphs.edge2node_broadcaster[:,:,2] == expected_2
 end
