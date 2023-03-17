@@ -88,7 +88,6 @@ graphs = GNGraphBatch(adj_mats)
 N1 = size(adj_mat_1, 1) # Number of nodes in graph 1
 N2 = size(adj_mat_2, 1) # Number of nodes in graph 2
 
-
 edge_features = paddedbatch(
     [
         # Edge features for graph 1
@@ -132,11 +131,9 @@ getgraphfeatures(out, 2)
 # Example #3: Sequential GNN blocks
 ####
 
-input_dims = (0, 2, 0)
-embedded_dims = (10, 5, 3)
-output_dims = (0, 0, 1)
-
-n_core_blocks = 2
+input_dims = (X_DE, X_DN, X_DG)
+core_dims = (10, 5, 3)
+output_dims = (Y_DE, Y_DN, Y_DG)
 
 struct GNNModel
     encoder
@@ -144,11 +141,11 @@ struct GNNModel
     decoder
 end
 
-function GNNModel()
+function GNNModel(; n_cores=2)
     GNNModel(
-        GNBlock(input_dims => embedded_dims),
-        GNCoreList([GNCore(embedded_dims) for _ in 1:n_core_blocks]),
-        GNBlock(embedded_dims => output_dims),
+        GNBlock(input_dims => core_dims),
+        GNCoreList([GNCore(core_dims) for _ in 1:n_cores]),
+        GNBlock(core_dims => output_dims),
     )
 end
 
@@ -158,20 +155,25 @@ end
 
 m = GNNModel()
 
+adj_mat = [
+    1 0 1;
+    1 1 0;
+    0 0 1;
+]
+adj_mats = [adj_mat]
+N = size(adj_mat,1) # number of nodes
+G = length(adj_mats) # number of graphs
+
 x = (
-    graphs = GNGraphBatch([[
-        1 0 1;
-        1 1 0;
-        0 0 1;
-    ]]),
-    ef = nothing,
-    nf = rand(Float32, 2, 3, 1),
+    graphs = GNGraphBatch(adj_mats),
+    ef = rand(Float32, X_DE, N^2, G),
+    nf = nothing,
     gf = nothing,
 )
 
 out = m(x)
 
-getedgefeatures(out, 1)
-getnodefeatures(out, 1)
-getgraphfeatures(out, 1)
+@assert size(getedgefeatures(out, 1)) == (Y_DE, 5)
+@assert size(getnodefeatures(out, 1)) == (Y_DN, 3)
+@assert size(getgraphfeatures(out, 1)) == (Y_DG,)
 

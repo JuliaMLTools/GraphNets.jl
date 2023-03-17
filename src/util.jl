@@ -28,17 +28,17 @@ function paddedbatch(v)
     reduce((a,b)->cat(a,b; dims=3), padded)
 end
 
-function getedgefeatures(t::Tuple, graph_idx)
+function getedgefeatures(t::NamedTuple, graph_idx)
     (; graphs, ef) = t
     getedgefeatures(graphs.adj_mats, graph_idx, ef)
 end
 
-function getnodefeatures(t::Tuple, graph_idx)
+function getnodefeatures(t::NamedTuple, graph_idx)
     (; graphs, nf) = t
     getnodefeatures(graphs.adj_mats, graph_idx, nf)
 end
 
-function getgraphfeatures(t::Tuple, graph_idx)
+function getgraphfeatures(t::NamedTuple, graph_idx)
     (; graphs, gf) = t
     getgraphfeatures(graphs.adj_mats, graph_idx, gf)
 end
@@ -50,7 +50,8 @@ function getedgefeatures(adj_mats, graph_idx, batched_ef)
 end
 
 function getnodefeatures(adj_mats, graph_idx, batched_nf)
-    batched_nf[:,:,graph_idx]
+    num_nodes = size(adj_mats[graph_idx], 1)
+    batched_nf[:, 1:num_nodes, graph_idx]
 end
 
 function getgraphfeatures(adj_mats, graph_idx, batched_gf)
