@@ -1,159 +1,167 @@
 cd(@__DIR__)
-using GraphNets
-using Functors
-using Flux
-using SparseArrays
-using BenchmarkTools
+include("imports.jl")
+
+g = Graphs.SimpleGraphs.SimpleGraph(ones(10,10))
+gplot(g)
 
 struct GNModel
     node_embedding_table
     encoder
     core
-    graph_layer_norm
-    edge_head
-    node_head
+    decoder
 end
 
 Functors.@functor GNModel
 
-node_vocab_size = 100
-input_dims = (0,256,0)
-core_dims = (384,384,384)
-output_dims = (2,2,0)
-
-function GNModel(vocab_size, in_dims, core_dims, out_dims; n_core_blocks=2)
-    _, node_in_size, _ = in_dims
-    edge_core_size, node_core_size, _ = core_dims
-    edge_out_size, node_out_size, _ = out_dims
+function GNModel(from_to::Pair, core_dims, vocab_size; n_core_blocks=2)
+    x_dims, y_dims = from_to
+    _, x_dn, _ = x_dims
     GNModel(
-        Embedding(vocab_size=>node_in_size),
-        GNBlock(in_dims, core_dims),
-        GNCoreList([GNCore(core_dims; dropout=dropout) for _ in 1:n_core_blocks]),
-        GraphLayerNorm(out_dims),
-        Dense(edge_core_size=>edge_out_size),
-        Dense(node_core_size=>node_out_size),
+        Embedding(vocab_size => x_dn),
+        GNBlock(x_dims => core_dims),
+        GNCoreList([GNCore(core_dims) for _ in 1:n_core_blocks]),
+        GNBlock(core_dims => y_dims),
     )
 end
 
 function (m::GNModel)(graphs, idx, targets=nothing)
-    featured_graphs = (
+    x = (
         graphs = graphs,
         ef = nothing,
-        nf = m.node_embedding_table(idx),
+        nf = m.node_embedding_table(idx.nodes),
         gf = nothing,
     )
-    encoded = m.encoder(featured_graphs)
-    x = m.core(encoded)
-    x2_edge, x2_node, _ = m.graph_layer_norm(x) # (C,T,B)
-    edge_logits = edge_head(x2_edge)
-    node_logits = node_head(x2_node)
+    encoded = m.encoder(x)
+    x1 = m.core(encoded)
+    y = m.decoder(x1)
+    logits = (
+        edge_logits = y.ef,
+        node_logits = y.nf,
+    )
     if isnothing(targets)
         loss = nothing
     else
+        DN, T, B = size(logits.node_logits)
+        
+        node_logits_reshaped = reshape(logits.node_logits, DN*T*B)
+        node_targets_reshaped = reshape(targets.nodes, T*B)
+        loss_nodes = Flux.logitbinarycrossentropy(node_logits_reshaped, node_targets_reshaped)
 
-        # Stopped here.
-
-        C, B, T = size(logits)
-        logits_reshaped = reshape(logits, C, T*B)
-        targets_reshaped = reshape(targets, T*B)
-        targets_onehot = Flux.onehotbatch(targets_reshaped, 1:vocab_size)
-        loss = Flux.logitcrossentropy(logits_reshaped, targets_onehot)
+        DE, T, B = size(logits.edge_logits)
+        edge_logits_reshaped = reshape(logits.edge_logits, DE*T*B)
+        edge_targets_reshaped = reshape(targets.edges, T*B)
+        loss_edges = Flux.logitbinarycrossentropy(edge_logits_reshaped, edge_targets_reshaped)
+        
+        loss = loss_nodes + loss_edges
     end
-    (logits=(edge_logits, node_logits), loss=loss)
+    (logits=logits, loss=loss)
 end
 
-struct GNGraphs
-    padded_adj_mats
-    node_counts
-    edge_counts
-    graphs
+
+# batch_size = 64 # how many independent sequences will we process in parallel?
+# block_size = 256 # what is the maximum context length for predictions?
+# max_iters = 2000
+# eval_interval = 500
+# learning_rate = 3e-4
+# eval_iters = 200
+# n_embd = 384
+# n_head = 6
+# head_size = n_embd ÷ n_head
+# inv_sqrt_dₖ = Float32(1 / sqrt(head_size))
+# n_layer = 6
+# dropout = 0.2
+# device = CUDA.functional() ? gpu : cpu
+
+data = rand(1:100, 20_000)
+n = Int(round(0.9*length(data))) # first 90% will be train, rest val
+train_data = data[1:n]
+val_data = data[n+1:end]
+
+block_size = 10
+batch_size = 2
+
+function getedgetargets(node_idx)
+    n = length(node_idx)
+
+    node_idx_idx = collect(zip(1:n, node_idx))
+    sorted = first.(sort(node_idx_idx; lt=(a,b)->last(a) < last(b)))
+    enabled_edges = collect(zip(sorted[1:end-1], sorted[2:end]))
+    # @show node_idx
+    # @show node_idx_idx
+    # @show sorted
+    # @show enabled_edges
+    edge_targets_mat = zeros(Int, n, n)
+    for (i,j) in enabled_edges
+        edge_targets_mat[i,j] = 1
+    end
+    edge_targets = edge_targets_mat[:]
+    # display(edge_targets_mat)
+
+    edge_targets
 end
 
-function GNGraphs(graphs)
-    GNGraphs(
-        padadjmats(graphs),
-        getnodecounts(graphs),
-        getedgecounts(graphs),
-        graphs,
+function getbatch(split)
+    # generate a small batch of data of inputs x and targets y
+    data = split == "train" ? train_data : val_data
+    ix = rand(1:(length(data) - block_size), batch_size)
+    x_nodes = reduce(hcat, [data[i:i+block_size-1] for i in ix])
+    x_nodes_sorted = reduce(hcat, map(sort, eachcol(x_nodes)))
+    x_nodes_min = reduce(hcat, map(minimum, eachcol(x_nodes_sorted)))
+    y_nodes = broadcast(==, x_nodes_min, x_nodes)
+    y_edges = reduce(hcat, getedgetargets.(eachcol(x_nodes)))
+    (
+        (; nodes=x_nodes),
+        (nodes=y_nodes, edges=y_edges),
     )
 end
+getbatch("train")
 
+Random.seed!(1234)
 
+vocab_size = 100 # Maximum integer to be sorted
 
-function getsortededges(adj_mat)
-    src, dst, _ = findnz(adj_mat)
-    sort(collect(zip(src,dst)))
+# Let's overfit the network on a single example to start
+N = 10
+x_idx = rand(1:vocab_size, N, 2) # Unsorted integers
+y_idx = sort(x_idx) # Sorted integers
+adj_mat = ones(N, N) # Fully connected graph
+adj_mats = [adj_mat] # Just one graph in the batch
+G = length(adj_mats) # number of graphs
+
+x_dims = (0,256,0)
+core_dims = (384,384,384)
+y_dims = (1,1,0)
+
+model = GNModel(x_dims=>y_dims, core_dims, vocab_size)
+logits, loss = model(GNGraphBatch(adj_mats), x_idx)
+logits.edge_logits
+logits.node_logits
+
+x, y = getbatch("train")
+logits, loss = model(GNGraphBatch(adj_mats), x, y)
+model(GNGraphBatch(adj_mats), x).logits.node_logits
+
+learning_rate = 3e-4
+optim = Flux.setup(Flux.AdamW(learning_rate), model)
+dropout = 0
+max_iters = 10_000
+
+function train!(model)
+    graphs = GNGraphBatch(adj_mats)
+    trainmode!(model)
+    @showprogress for iter in 1:max_iters
+        xb, yb = getbatch("train")
+        loss, grads = Flux.withgradient(model) do m
+            m(graphs, xb, yb).loss
+        end
+        Flux.update!(optim, model, grads[1])
+    end
+    testmode!(model)
 end
 
-adj_mat = Flux.unsqueeze([1 0 1; 1 1 0; 0 0 1], dims=3)
-idx = Flux.unsqueeze(repeat(collect(1:3), 1, 3), dims=3)
-res = adj_mat .* idx
-reduce(
-    cat,
-    
-)
+train!(model)
 
-Flux.onehotbatch(res, 1:3)
-
-
-
-
-
-dst = zeros(3,9,2)
-for (slice_idx,slice) in enumerate(eachslice(masked_idx, dims=3))
-    # @show slice_idx
-    # @show size(slice[:])
-    flat = slice[:]
-    active_idx = findall(x->!iszero(x), flat)
-    active = flat[active_idx]
-    hot = Flux.onehotbatch(active, 1:3)
-    # @show flat
-    # @show active_idx
-    # @show active
-    # display(hot)
-    NNlib.scatter!(+, view(dst, :, :, slice_idx), hot, active_idx)
-end
-
-
-
-
-
-
-
-sparse_adj_mats = [sparse(adj_mats[:,:,1]), sparse(adj_mats[:,:,2])]
-sparse_adj_mats[1]
-
-getnode2edgemat(adj_mats) |> size 
-getnode2edgemat(adj_mats)
-
-
-dst = zeros(3,9)
-NNlib.scatter!(+, dst, [1 0 0; 0 1 0; 0 0 1], [3,2,1])
-
-
-
-
-function getsortededges(adj_mat)
-    src, dst, _ = findnz(adj_mat)
-    sort(collect(zip(src,dst)))
-end
-function getedgesrcmask(adj_mat)
-    sorted_edges = getsortededges(adj_mat)
-    Float32.(
-        reduce(
-            hcat,
-            map(first.(sorted_edges)) do idx
-                Flux.onehot(idx, 1:3)
-            end
-        )
-    )
-end
-
-T, E, B = 3, 9, 2
-dst = zeros(T,E,B)
-function getedgesrcmask(dst, slice_idx, adj_mat, labels)
-    toscatter = Flux.onehotbatch(findnz(adj_mat)[1], labels)
-    NNlib.scatter!(+, view(dst, :, :, slice_idx), toscatter, active_idx)
-end
-
-@btime getedgesrcmask(dst, 1, sparse_adj_mats[1], 1:3)
+x, y = getbatch("valid")
+logits, loss = model(GNGraphBatch(adj_mats), x, y)
+reshape(sigmoid(model(GNGraphBatch(adj_mats), x).logits.node_logits), 10, 2)
+reshape(Int.(round.(sigmoid(model(GNGraphBatch(adj_mats), x).logits.edge_logits))), 10, 10, 2)

@@ -242,21 +242,19 @@ end
 end
 
 @testset "GNCoreList" begin
-    dims = DE, DN, DG = (10,5,3)
-    N,B = 3,2
-    N2 = N^2
-    adj_mats = [rand(0:1, N, N) for _ in 1:B]
+    dims = CE, CN, CG = (10,5,3) # Channel dims (edge, node, graph) for each core
+    N, B = 3, 2 # N = Node count, B = Batch size
+    PE = N^2 # PE = Padded Edge Count
+    adj_mats = [rand(0:1, N, N) for _ in 1:B] # Randomize adjacency matrices
     x = (
         graphs = GNGraphBatch(adj_mats),
-        ef = rand(Float32, DE, N2, B),
-        nf = rand(Float32, DN, N, B), 
-        gf = rand(Float32, DG, 1, B)
+        ef = rand(Float32, CE, PE, B),
+        nf = rand(Float32, CN, N, B), 
+        gf = rand(Float32, CG, 1, B)
     )
-    #
-    n_core_blocks = 3
-    core_list = GNCoreList([GNCore(dims) for _ in 1:n_core_blocks])
-    _, y_e, y_n, y_g = core_list(x)
-    @test size(y_e) == (DE,N2,B)
-    @test size(y_n) == (DN,N,B)
-    @test size(y_g) == (DG,1,B)
+    core_list = GNCoreList([GNCore(dims), GNCore(dims)])
+    y = core_list(x)
+    @test size(y.ef) == (CE, PE, B)
+    @test size(y.nf) == (CN, N, B)
+    @test size(y.gf) == (CG, 1, B)
 end
