@@ -1,14 +1,98 @@
 cd(@__DIR__)
 include("imports.jl")
+Random.seed!(1234)
+include("helper.jl")
 
-g = Graphs.SimpleGraphs.SimpleGraph(ones(10,10))
-gplot(g)
+#####################################################
+# Create a sample graph with input/output features
+#####################################################
 
-struct GNModel
-    node_embedding_table
-    encoder
-    core
-    decoder
+n = 5 # number of nodes
+adj_mat = ones(Int, n, n) # fully connect graph
+x_nf = rand(1:100, n) # Sample input node features
+y_nf = Int.(x_nf .== minimum(x_nf)) # Sample output node features
+y_ef = getoutputedgefeatures(x_nf) # Output edge features
+
+
+#####################################################
+# (Optional) Use EuclidGraphs.jl to visualize the input and output graphs
+#####################################################
+using EuclidGraphs
+pentagon = [(-3,3), (-2,0), (2,0), (3,3), (0,5)] # XY coordinates of a pentagon
+# input featured graph
+x_features = (
+    ef = nothing,
+    nf = x_nf, # input node features
+    gf = nothing,
+)
+x_graph = EuclidGraph(pentagon)
+x_graph(x_features) # write("x.svg", x_graph(x_features))
+# output featured graph
+y_features = (
+    ef = y_ef, # output edge features
+    nf = y_nf, # output node features
+    gf = nothing,
+)
+y_graph = EuclidGraph(
+    pentagon;
+    node_style=(nf)
+        (; fill=(iszero(nf) ? "green" : "transparent"))
+    end
+    edge_style=(ef)
+        if iszero(ef)
+            width=0.1
+            color="#efefef"
+        else
+            width=1,
+            color="green"
+        end
+        (width=width, color=color)
+    end
+)
+y_graph(y_features) # write("y.svg", y_graph(y_features))
+
+
+
+
+# batch_size = 64 # how many independent sequences will we process in parallel?
+# block_size = 256 # what is the maximum context length for predictions?
+# max_iters = 2000
+# eval_interval = 500
+# learning_rate = 3e-4
+# eval_iters = 200
+# n_embd = 384
+# n_head = 6
+# head_size = n_embd ÷ n_head
+# inv_sqrt_dₖ = Float32(1 / sqrt(head_size))
+# n_layer = 6
+# dropout = 0.2
+# device = CUDA.functional() ? gpu : cpu
+
+data = rand(1:100, 20_000) # generate some random data
+n = Int(round(0.9*length(data))) # 90% of data will be train
+train_data = data[1:n] # first 90% will be train
+val_data = data[n+1:end] # last 10% will be validation
+
+function getbatch(split)
+    # generate a small batch of data of inputs x and targets y
+    data = split == "train" ? train_data : val_data
+    ix = rand(1:(length(data) - block_size), batch_size)
+    x_nodes = reduce(hcat, [data[i:i+block_size-1] for i in ix])
+    x_nodes_sorted = reduce(hcat, map(sort, eachcol(x_nodes)))
+    x_nodes_min = reduce(hcat, map(minimum, eachcol(x_nodes_sorted)))
+    y_nodes = broadcast(==, x_nodes_min, x_nodes)
+    y_edges = reduce(hcat, getedgetargets.(eachcol(x_nodes)))
+    (
+        (; nodes=x_nodes),
+        (nodes=y_nodes, edges=y_edges),
+    )
+end
+
+struct GNModel{N,E,C,D} 
+    node_embedding_table::N
+    encoder::E
+    core::C
+    decoder::D
 end
 
 Functors.@functor GNModel
@@ -58,24 +142,6 @@ function (m::GNModel)(graphs, idx, targets=nothing)
 end
 
 
-# batch_size = 64 # how many independent sequences will we process in parallel?
-# block_size = 256 # what is the maximum context length for predictions?
-# max_iters = 2000
-# eval_interval = 500
-# learning_rate = 3e-4
-# eval_iters = 200
-# n_embd = 384
-# n_head = 6
-# head_size = n_embd ÷ n_head
-# inv_sqrt_dₖ = Float32(1 / sqrt(head_size))
-# n_layer = 6
-# dropout = 0.2
-# device = CUDA.functional() ? gpu : cpu
-
-data = rand(1:100, 20_000)
-n = Int(round(0.9*length(data))) # first 90% will be train, rest val
-train_data = data[1:n]
-val_data = data[n+1:end]
 
 block_size = 10
 batch_size = 2
@@ -100,20 +166,7 @@ function getedgetargets(node_idx)
     edge_targets
 end
 
-function getbatch(split)
-    # generate a small batch of data of inputs x and targets y
-    data = split == "train" ? train_data : val_data
-    ix = rand(1:(length(data) - block_size), batch_size)
-    x_nodes = reduce(hcat, [data[i:i+block_size-1] for i in ix])
-    x_nodes_sorted = reduce(hcat, map(sort, eachcol(x_nodes)))
-    x_nodes_min = reduce(hcat, map(minimum, eachcol(x_nodes_sorted)))
-    y_nodes = broadcast(==, x_nodes_min, x_nodes)
-    y_edges = reduce(hcat, getedgetargets.(eachcol(x_nodes)))
-    (
-        (; nodes=x_nodes),
-        (nodes=y_nodes, edges=y_edges),
-    )
-end
+
 getbatch("train")
 
 Random.seed!(1234)
@@ -165,3 +218,5 @@ x, y = getbatch("valid")
 logits, loss = model(GNGraphBatch(adj_mats), x, y)
 reshape(sigmoid(model(GNGraphBatch(adj_mats), x).logits.node_logits), 10, 2)
 reshape(Int.(round.(sigmoid(model(GNGraphBatch(adj_mats), x).logits.edge_logits))), 10, 10, 2)
+
+
