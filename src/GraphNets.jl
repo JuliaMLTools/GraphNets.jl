@@ -15,8 +15,11 @@ include("imports.jl")
 include("util.jl")
 export padcat, padmat, paddedbatch, getedgefeatures, getnodefeatures, getgraphfeatures
 
+include("checks.jl")
+
 include("gngraphbatch.jl")
-export GNGraphBatch, padadjmats, getsrcnode2edgebroadcaster, getdstnode2edgebroadcaster, padef, padnf
+export GNGraphBatch, padadjmats, getsrcnode2edgebroadcaster, getdstnode2edgebroadcaster, 
+padef, padnf, batch, unbatch
 
 include("edgefninput.jl")
 export getedgefninput

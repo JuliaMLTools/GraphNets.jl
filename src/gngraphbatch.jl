@@ -109,7 +109,7 @@ end
 
 
 function batch(t::NamedTuple)
-    @assert Set(t) == Set((:graphs, :ef, :nf, :gf))
+    @assert Set(keys(t)) == Set((:graphs, :ef, :nf, :gf))
     (; graphs, ef, nf, gf) = t
     @assert !isnothing(ef) || !isnothing(nf) || !isnothing(gf)
     batch(graphs,ef,nf,gf)
@@ -160,7 +160,7 @@ end
 """
 function batch(adj_mats::AbstractVector, ef, nf, gf)
     @assert length(adj_mats) > 0
-    @assert checksamebatchsize2d(adj_mats, ef, nf, gf)
+    checksamebatchsize2d(adj_mats, ef, nf, gf)
 
     # Check shapes
     for adj_mat in adj_mats
@@ -175,11 +175,20 @@ function batch(adj_mats::AbstractVector, ef, nf, gf)
 
     x = (
         graphs = GNGraphBatch(adj_mats),
-        ef = padef(adj_mats, ef),
-        nf = nf, 
-        gf = gf,
+        ef = batchef(adj_mats, ef),
+        nf = batchnf(adj_mats, nf),
+        gf = batchgf(gf),
     )
 end
+
+batchef(adj_mats, ef) = padef(adj_mats, ef)
+batchef(adj_mats, ::Nothing) = nothing
+
+batchnf(adj_mats, nf) = padnf(adj_mats, nf)
+batchnf(adj_mats, ::Nothing) = nothing
+
+batchgf(gf) = reduce(hcat, gf)
+batchgf(::Nothing) = nothing
 
 function padnf(adj_mats::AbstractVector, nfs::AbstractVector)
     max_num_nodes = maximum(first.(size.(adj_mats)))
@@ -227,4 +236,59 @@ function padef(adj_mats::AbstractVector, efs::AbstractVector)
             zip(eachslice(padded_adj_mats; dims=3), efs),
         )
     )
+end
+
+function unbatch(t::NamedTuple)
+    @assert Set(keys(t)) == Set((:graphs, :ef, :nf, :gf))
+    (; graphs, ef, nf, gf) = t
+    @assert !isnothing(ef) || !isnothing(nf) || !isnothing(gf)
+    unbatch(graphs,ef,nf,gf)
+end
+
+function unbatch(graphs::GNGraphBatch, ef, nf, gf)
+    @assert !isnothing(ef) || !isnothing(nf) || !isnothing(gf)
+    if length(graphs.adj_mats) == 1
+        return unbatch(graphs.adj_mats[1], ef, nf, gf)
+    end
+    unbatch(graphs.adj_mats, ef, nf, gf)
+end
+
+function unbatch(adj_mat::AbstractMatrix, ef, nf, gf)
+    @assert !isnothing(ef) || !isnothing(nf) || !isnothing(gf)
+    (
+        graphs=adj_mat,
+        ef=unpadef(adj_mat, ef),
+        nf=nf,
+        gf=gf,
+    )
+end
+
+function unbatch(adj_mats::AbstractVector, ef, nf, gf)
+    @assert !isempty(ef) || !isempty(nf) || !isempty(gf)
+    (
+        graphs=adj_mats,
+        ef=unpadef(adj_mats, ef),
+        nf=unpadnf(adj_mats, nf),
+        gf=gf,
+    )
+end
+
+function unpadef(adj_mat::AbstractMatrix, ef)
+    @view ef[:, findall(isone, view(adj_mat, :)), :]  
+end
+
+function unpadef(adj_mats::AbstractVector, ef)
+    padded_adj_mats = padadjmats(adj_mats)
+    map(enumerate(eachslice(padded_adj_mats; dims=3))) do (graph_idx,padded_adj_mat)
+        idx = findall(isone, view(padded_adj_mat, :))
+        view(ef, :, idx, graph_idx)
+    end
+end
+
+function unpadnf(adj_mats::AbstractVector, nf)
+    @show size(nf)
+    map(enumerate(adj_mats)) do (graph_idx,adj_mat)
+        @show size(adj_mat)
+        @view nf[:, 1:size(adj_mat,1), graph_idx]
+    end
 end

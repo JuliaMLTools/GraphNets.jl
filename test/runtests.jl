@@ -1,6 +1,70 @@
 using GraphNets
 using Test
 
+@testset "batch_inverse_2D" begin
+    adj_mat_1 = [
+        1 0 1;
+        1 1 0;
+        0 0 1;
+    ]
+    adj_mat_2 = [
+        1 0 1 0;
+        1 1 0 1;
+        0 0 1 0;
+        1 1 0 1
+    ]
+    adj_mats = [adj_mat_1, adj_mat_2]
+    num_edges_1 = length(filter(isone, adj_mat_1))
+    num_edges_2 = length(filter(isone, adj_mat_2))
+    edge_dim = 10
+    edge_features = [
+        rand(Float32, edge_dim, num_edges_1),
+        rand(Float32, edge_dim, num_edges_2),
+    ]
+    num_nodes_1 = size(adj_mat_1, 1)
+    num_nodes_2 = size(adj_mat_2, 1)
+    node_dim = 5
+    node_features = [
+        rand(Float32, node_dim, num_nodes_1),
+        rand(Float32, node_dim, num_nodes_2),
+    ]
+    x = (
+        graphs = adj_mats,
+        ef = edge_features, 
+        nf = node_features,
+        gf = nothing # no graph level input features
+    )
+    x̂ = x |> batch |> unbatch
+    @test x̂.graphs == x.graphs
+    @test x̂.ef == x.ef
+    @test x̂.nf == x.nf
+    @test x̂.gf == x.gf
+end
+
+@testset "batch_inverse_3D" begin
+    adj_mat = [
+        1 0 1;
+        1 1 0;
+        0 0 1;
+    ]
+    num_edges = length(filter(isone, adj_mat))
+    num_nodes = size(adj_mat, 1)
+    batch_size = 2
+    X_DE = 10
+    X_DN = 5
+    x = (
+        graphs = adj_mat,
+        ef = rand(Float32, X_DE, num_edges, batch_size), 
+        nf = rand(Float32, X_DN, num_nodes, batch_size),
+        gf = nothing # no graph level input features
+    )
+    x̂ = x |> batch |> unbatch
+    @test x̂.graphs == x.graphs
+    @test x̂.ef == x.ef
+    @test x̂.nf == x.nf
+    @test x̂.gf == x.gf
+end
+
 @testset "padef" begin
     adj_mat = [
         1 0 1;
