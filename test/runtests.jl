@@ -1,6 +1,98 @@
 using GraphNets
 using Test
 
+@testset "padef" begin
+    adj_mat = [
+        1 0 1;
+        1 1 0;
+        0 0 1;
+    ]
+    ef_dim = 10
+    num_nodes = size(adj_mat, 1)
+    N2 = num_nodes^2
+    num_edges = length(filter(isone, adj_mat))
+    batch_size = 2
+    ef = rand(Float32, ef_dim, num_edges, batch_size)
+    padded = padef(adj_mat, ef)
+    @test size(padded) == (ef_dim, N2, batch_size)
+    adj_mat_1 = [
+        1 0 1;
+        1 1 0;
+        0 0 1;
+    ]
+    num_edges_1 = length(filter(isone, adj_mat_1))
+    adj_mat_2 = [
+        1 0 1 0;
+        1 1 0 1;
+        0 0 1 0;
+        1 1 0 1
+    ]
+    num_edges_2 = length(filter(isone, adj_mat_2))
+    adj_mats = [adj_mat_1, adj_mat_2]
+    max_num_nodes = maximum(size.(adj_mats, 1))
+    PN2 = max_num_nodes^2
+    batch_size = length(adj_mats)
+    efs = [
+        rand(Float32, ef_dim, num_edges_1),
+        rand(Float32, ef_dim, num_edges_2),
+    ]
+    padded = padef(adj_mats, efs)
+    @test size(padded) == (ef_dim, PN2, batch_size)
+end
+
+@testset "padnf" begin
+    adj_mat_1 = [
+        1 0 1;
+        1 1 0;
+        0 0 1;
+    ]
+    adj_mat_2 = [
+        1 0 1 0;
+        1 1 0 1;
+        0 0 1 0;
+        1 1 0 1
+    ]
+    adj_mats = [adj_mat_1, adj_mat_2]
+    batch_size = length(adj_mats)
+    max_num_nodes = maximum(first.(size.(adj_mats)))
+    nf_dim = 5
+    nfs = [
+        rand(Float32, nf_dim, size(adj_mat_1, 1)),
+        rand(Float32, nf_dim, size(adj_mat_2, 1)),
+    ]
+    padded = padnf(adj_mats, nfs)
+    @test size(padded) == (nf_dim, max_num_nodes, batch_size)
+end
+
+# @testset "readme" begin
+#     adj_mat = [
+#         1 0 1;
+#         1 1 0;
+#         0 0 1;
+#     ] # Adjacency matrix
+#     num_nodes = length(adj_mat)
+#     num_edges = length(filter(isone, adj_mat))
+#     X_DE = 10 # Input feature dimension of edges
+#     X_DN = 5 # Input feature dimension of nodes
+#     X_DG = 0 # Input feature dimension of graphs (no graph level input data)
+#     Y_DE = 3 # Output feature dimension of edges
+#     Y_DN = 4 # Output feature dimension of nodes
+#     Y_DG = 5 # Output feature dimension of graphs
+#     block = GNBlock(
+#         (X_DE,X_DN,X_DG) => (Y_DE,Y_DN,Y_DG)
+#     )
+#     batch_size = 2
+#     edge_features = rand(Float32, X_DE, num_edges, batch_size)
+#     node_features = rand(Float32, X_DN, num_nodes, batch_size)
+#     graph_features = nothing # no graph level input features
+#     x = (
+#         graphs=adj_mat,  # All graphs in this batch have same structure
+#         ef=edge_features, 
+#         nf=node_features,
+#         gf=graph_features
+#     ) |> batch
+# end
+
 @testset "padadjmats" begin
     PN = 4
     adj_mats = [

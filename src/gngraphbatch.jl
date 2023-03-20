@@ -107,3 +107,124 @@ function padadjmats(adj_mats)
 end
 
 
+
+function batch(t::NamedTuple)
+    @assert Set(t) == Set((:graphs, :ef, :nf, :gf))
+    (; graphs, ef, nf, gf) = t
+    @assert !isnothing(ef) || !isnothing(nf) || !isnothing(gf)
+    batch(graphs,ef,nf,gf)
+end
+
+"""
+    batch_size = 2
+    edge_features = rand(Float32, X_DE, num_edges, batch_size)
+    node_features = rand(Float32, X_DN, num_nodes, batch_size)
+    graph_features = nothing # no graph level input features
+    x = (
+        graphs=adj_mat,  # All graphs in this batch have same structure
+        ef=edge_features, 
+        nf=node_features,
+        gf=graph_features
+    ) |> batch
+"""
+function batch(adj_mat::AbstractMatrix, ef, nf, gf)
+    checkshapes3d(ef, nf, gf)
+    checksamebatchsize3d(ef, nf, gf)
+    checknodeedgecounts(adj_mat, ef, nf)
+    num_nodes = size(adj_mat, 1)
+    x = (
+        graphs = GNGraphBatch([adj_mat]),
+        ef = padef(adj_mat, ef),
+        nf = nf, 
+        gf = gf,
+    )
+end
+
+"""
+    edge_features = [
+        rand(Float32, X_DE, num_edges_1),
+        rand(Float32, X_DE, num_edges_2),
+    ]
+    node_features = [
+        rand(Float32, X_DN, num_nodes_1),
+        rand(Float32, X_DN, num_nodes_2),
+    ]
+    graph_features = nothing
+
+    x = (
+        graphs=[adj_mat_1,adj_mat_2],  # Graphs in this batch have different structure
+        ef=edge_features, 
+        nf=node_features,
+        gf=graph_features
+    ) |> batch
+"""
+function batch(adj_mats::AbstractVector, ef, nf, gf)
+    @assert length(adj_mats) > 0
+    @assert checksamebatchsize2d(adj_mats, ef, nf, gf)
+
+    # Check shapes
+    for adj_mat in adj_mats
+        @assert ndims(adj_mat) == 2 # (N, N)
+    end
+    checkshapes2d(ef, nf, gf)
+
+    # Check node/edge counts
+    for (adj_mat, ef_i, nf_i) in zip(adj_mats, ef, nf)
+        checknodeedgecounts(adj_mat, ef_i, nf_i)
+    end
+
+    x = (
+        graphs = GNGraphBatch(adj_mats),
+        ef = padef(adj_mats, ef),
+        nf = nf, 
+        gf = gf,
+    )
+end
+
+function padnf(adj_mats::AbstractVector, nfs::AbstractVector)
+    max_num_nodes = maximum(first.(size.(adj_mats)))
+    node_dim = size(nfs[1], 1)
+    batch_size = length(adj_mats)
+    padded_nf = zeros(Float32, node_dim, max_num_nodes, batch_size)
+    for (graph_idx,nf) in enumerate(nfs)
+        N = size(nf, 2)
+        padded_nf[:, 1:N, graph_idx] .= nf
+    end
+    padded_nf
+end
+
+function padef(adj_mat::AbstractMatrix, ef)
+    batch_size = size(ef, 3)
+    num_nodes = size(adj_mat, 1)
+    N2 = num_nodes^2
+    edge_idx = findall(isone, view(adj_mat, :))
+    edge_dim = size(ef, 1)
+    padded = zeros(Float32, edge_dim, N2, batch_size)
+    for (graph_idx,slice) in enumerate(eachslice(ef; dims=3))
+        NNlib.scatter!(+, view(padded, :, :, graph_idx), slice, edge_idx)
+    end
+    padded
+end
+
+function padef(adj_mat::AbstractMatrix, ef::AbstractMatrix)
+    edge_dim = size(ef, 1)
+    num_nodes = size(adj_mat, 1)
+    N2 = num_nodes^2
+    edge_idx = findall(isone, view(adj_mat, :))
+    padded = zeros(Float32, edge_dim, N2)
+    NNlib.scatter!(+, padded, ef, edge_idx)
+end
+
+function padef(adj_mats::AbstractVector, efs::AbstractVector)
+    padded_adj_mats = padadjmats(adj_mats)
+    reduce(
+        (a,b)->cat(a,b,dims=3),
+        map(
+            pair->begin
+                padded_adj_mat, ef_i = pair
+                padef(padded_adj_mat, ef_i)
+            end,
+            zip(eachslice(padded_adj_mats; dims=3), efs),
+        )
+    )
+end

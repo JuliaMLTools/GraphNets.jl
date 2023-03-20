@@ -21,7 +21,7 @@ adj_mat = [
     0 0 1;
 ] # Adjacency matrix
 
-num_nodes = length(adj_mat)
+num_nodes = size(adj_mat, 1)
 num_edges = length(filter(isone, adj_mat))
 
 X_DE = 10 # Input feature dimension of edges
