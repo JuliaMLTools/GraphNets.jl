@@ -6,7 +6,7 @@ function checknodeedgecounts(adj_mat, ef, nf)
     num_nodes = size(adj_mat, 1)
     num_edges = length(filter(isone, adj_mat))
     @assert size(ef, 2) == num_edges
-    @assert size(nf, 2) == num_nodes
+    @assert size(nf, 2) == num_nodes "$(size(nf, 2)) != $num_nodes"
 end
 function checknodeedgecounts(adj_mat, ef, nf::Nothing)
     num_edges = length(filter(isone, adj_mat))
