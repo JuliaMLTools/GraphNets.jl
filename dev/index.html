@@ -167,7 +167,7 @@ x = (
 y = block(x) |&gt; unbatch
 @assert size(y.ef) == (Y_DE, num_edges, batch_size)
 @assert size(y.nf) == (Y_DN, num_nodes, batch_size)
-@assert size(y.gf) == (Y_DG, batch_size)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/feefb1edbb888ef4c6517de5871713bec6369296/src/gnblock.jl#L10-L48">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.GNCore" href="#GraphNets.GNCore"><code>GraphNets.GNCore</code></a> — <span class="docstring-category">Type</span></header><section><div><p>GNCore(dims; dropout=0)</p><p>Initializes an instance of the <strong><code>GNCore</code></strong> type, representing a GraphNet &quot;core&quot; block.</p><p>A <strong><code>GNCore</code></strong> instance accepts an input array <strong><code>x</code></strong> of dimensions (C, T, B) and outputs an array of dimensions (HS, T, B). &quot;C&quot; is the channel size (embedding dimension). &quot;T&quot; is the block size (number of input tokens). &quot;B&quot; is the batch size.</p><p>The following keyword arguments are supported:</p><ul><li><code>dropout</code> (Defaults to 0)</li></ul><p><strong>Examples:</strong></p><pre><code class="language-julia hljs">dims = (DE, DN, DG) = 3, 4, 5
+@assert size(y.gf) == (Y_DG, batch_size)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/9f71613ec661c2f58f8bc091beed88a0ac2642f5/src/gnblock.jl#L10-L48">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.GNCore" href="#GraphNets.GNCore"><code>GraphNets.GNCore</code></a> — <span class="docstring-category">Type</span></header><section><div><p>GNCore(dims; dropout=0)</p><p>Initializes an instance of the <strong><code>GNCore</code></strong> type, representing a GraphNet &quot;core&quot; block.</p><p>A <strong><code>GNCore</code></strong> instance accepts an input array <strong><code>x</code></strong> of dimensions (C, T, B) and outputs an array of dimensions (HS, T, B). &quot;C&quot; is the channel size (embedding dimension). &quot;T&quot; is the block size (number of input tokens). &quot;B&quot; is the batch size.</p><p>The following keyword arguments are supported:</p><ul><li><code>dropout</code> (Defaults to 0)</li></ul><p><strong>Examples:</strong></p><pre><code class="language-julia hljs">dims = (DE, DN, DG) = 3, 4, 5
 core = GNCore(dims)
 adj_mat = adj_mat = [
     1 0 1;
@@ -189,7 +189,7 @@ x = (
 y = core(x) |&gt; unbatch
 @assert size(y.ef) == (DE, num_edges, batch_size)
 @assert size(y.nf) == (DN, num_nodes, batch_size)
-@assert size(y.gf) == (DG, batch_size)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/feefb1edbb888ef4c6517de5871713bec6369296/src/gncore.jl#L10-L47">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.GNCoreList" href="#GraphNets.GNCoreList"><code>GraphNets.GNCoreList</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">GNCoreList(input_dim, num_heads; head_size=(input_dim ÷ num_heads), dropout=0)</code></pre><p>Initializes an instance of the <strong><code>GNCoreList</code></strong> type, representing a sequence of GraphNet core blocks composed together.</p><p>The following keyword arguments are supported:</p><ul><li><code>dropout</code> (Defaults to 0)</li></ul><p>A <strong><code>GNCoreList</code></strong> instance accepts an input array <strong><code>x</code></strong> of dimensions (C, T, B) and outputs an array of dimensions (HS, T, B). &quot;C&quot; is the channel size (embedding dimension). &quot;T&quot; is the block size (number of input tokens). &quot;B&quot; is the batch size.</p><p><strong>Examples:</strong></p><pre><code class="language-julia hljs">dims = (DE, DN, DG) = 3, 4, 5
+@assert size(y.gf) == (DG, batch_size)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/9f71613ec661c2f58f8bc091beed88a0ac2642f5/src/gncore.jl#L10-L47">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.GNCoreList" href="#GraphNets.GNCoreList"><code>GraphNets.GNCoreList</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">GNCoreList(input_dim, num_heads; head_size=(input_dim ÷ num_heads), dropout=0)</code></pre><p>Initializes an instance of the <strong><code>GNCoreList</code></strong> type, representing a sequence of GraphNet core blocks composed together.</p><p>The following keyword arguments are supported:</p><ul><li><code>dropout</code> (Defaults to 0)</li></ul><p>A <strong><code>GNCoreList</code></strong> instance accepts an input array <strong><code>x</code></strong> of dimensions (C, T, B) and outputs an array of dimensions (HS, T, B). &quot;C&quot; is the channel size (embedding dimension). &quot;T&quot; is the block size (number of input tokens). &quot;B&quot; is the batch size.</p><p><strong>Examples:</strong></p><pre><code class="language-julia hljs">dims = (DE, DN, DG) = 3, 4, 5
 core_list = GNCoreList([GNCore(dims), GNCore(dims)])
 adj_mat = adj_mat = [
     1 0 1;
@@ -211,53 +211,55 @@ x = (
 y = core_list(x) |&gt; unbatch
 @assert size(y.ef) == (DE, num_edges, batch_size)
 @assert size(y.nf) == (DN, num_nodes, batch_size)
-@assert size(y.gf) == (DG, batch_size)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/feefb1edbb888ef4c6517de5871713bec6369296/src/gncorelist.jl#L1-L38">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.batch" href="#GraphNets.batch"><code>GraphNets.batch</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">batch(t::NamedTuple)</code></pre><p><strong>Example:</strong></p><pre><code class="language-julia hljs">    dims = (DE, DN, DG) = 3, 4, 5
-    core = GNCore(dims)
-    adj_mat_1 = [
-        1 0 1;
-        1 1 0;
-        0 0 1;
-    ] # Adjacency matrix 1
-    num_nodes_1 = size(adj_mat_1, 1)
-    num_edges_1 = length(filter(isone, adj_mat_1))
-    adj_mat_2 = [
-        1 0 1 0;
-        1 1 0 1;
-        0 0 1 0;
-        1 1 0 1;
-    ] # Adjacency matrix 2
-    num_nodes_2 = size(adj_mat_2, 1)
-    num_edges_2 = length(filter(isone, adj_mat_2))
-    edge_features = [
-        rand(Float32, DE, num_edges_1),
-        rand(Float32, DE, num_edges_2),
-    ]
-    node_features = [
-        rand(Float32, DN, num_nodes_1),
-        rand(Float32, DN, num_nodes_2),
-    ]
-    graph_features = [
-        rand(Float32, DG),
-        rand(Float32, DG),
-    ]
-    adj_mats = [adj_mat_1,adj_mat_2]
-    batch_size = length(adj_mats)
-    x = (
-        graphs=adj_mats,  # Graphs in this batch have different structure
-        ef=edge_features, 
-        nf=node_features,
-        gf=graph_features
-    )
-    x_batched = batch(x)
-    edge_block_size = x_batched.graphs.edge_block_size
-    node_block_size = x_batched.graphs.node_block_size
-    @assert typeof(x_batched.graphs) == GraphNets.GNGraphBatch
-    @assert size(x_batched.ef) == (DE, edge_block_size, batch_size)
-    @assert size(x_batched.nf) == (DN, node_block_size, batch_size)
-    @assert size(x_batched.gf) == (DG, 1, batch_size)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/feefb1edbb888ef4c6517de5871713bec6369296/src/batch.jl#L1-L52">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.unbatch" href="#GraphNets.unbatch"><code>GraphNets.unbatch</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">unbatch(t::NamedTuple)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/feefb1edbb888ef4c6517de5871713bec6369296/src/unbatch.jl#L1-L3">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.efview" href="#GraphNets.efview"><code>GraphNets.efview</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">efview(t::NamedTuple, d1, d2, d3)
+@assert size(y.gf) == (DG, batch_size)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/9f71613ec661c2f58f8bc091beed88a0ac2642f5/src/gncorelist.jl#L1-L38">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.batch" href="#GraphNets.batch"><code>GraphNets.batch</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">batch(t::NamedTuple)</code></pre><p><strong>Example:</strong></p><pre><code class="language-julia hljs">dims = (DE, DN, DG) = 3, 4, 5
+core = GNCore(dims)
+adj_mat_1 = [
+    1 0 1;
+    1 1 0;
+    0 0 1;
+] # Adjacency matrix 1
+num_nodes_1 = size(adj_mat_1, 1)
+num_edges_1 = length(filter(isone, adj_mat_1))
+adj_mat_2 = [
+    1 0 1 0;
+    1 1 0 1;
+    0 0 1 0;
+    1 1 0 1;
+] # Adjacency matrix 2
+num_nodes_2 = size(adj_mat_2, 1)
+num_edges_2 = length(filter(isone, adj_mat_2))
+edge_features = [
+    rand(Float32, DE, num_edges_1),
+    rand(Float32, DE, num_edges_2),
+]
+node_features = [
+    rand(Float32, DN, num_nodes_1),
+    rand(Float32, DN, num_nodes_2),
+]
+graph_features = [
+    rand(Float32, DG),
+    rand(Float32, DG),
+]
+adj_mats = [adj_mat_1,adj_mat_2]
+batch_size = length(adj_mats)
+x = (
+    graphs=adj_mats,  # Graphs in this batch have different structure
+    ef=edge_features, 
+    nf=node_features,
+    gf=graph_features
+)
+x_batched = batch(x)
+edge_block_size = x_batched.graphs.edge_block_size
+node_block_size = x_batched.graphs.node_block_size
+@assert typeof(x_batched.graphs) == GraphNets.GNGraphBatch
+@assert size(x_batched.ef) == (DE, edge_block_size, batch_size)
+@assert size(x_batched.nf) == (DN, node_block_size, batch_size)
+@assert size(x_batched.gf) == (DG, 1, batch_size)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/9f71613ec661c2f58f8bc091beed88a0ac2642f5/src/batch.jl#L1-L52">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.unbatch" href="#GraphNets.unbatch"><code>GraphNets.unbatch</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">unbatch(t::NamedTuple)
 
-Returns an array view of the edge features contained in the batched output.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/feefb1edbb888ef4c6517de5871713bec6369296/src/views.jl#L1-L5">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.nfview" href="#GraphNets.nfview"><code>GraphNets.nfview</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">nfview(t::NamedTuple, d1, d2, d3)
+**`unbatch`** is the inverse of **`batch`**. It takes a batched tuple and returns a tuple of unbatched arrays.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/9f71613ec661c2f58f8bc091beed88a0ac2642f5/src/unbatch.jl#L1-L5">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.efview" href="#GraphNets.efview"><code>GraphNets.efview</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">efview(t::NamedTuple, d1, d2, d3)
 
-Returns an array view of the noded features contained in the batched output.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/feefb1edbb888ef4c6517de5871713bec6369296/src/views.jl#L33-L37">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.gfview" href="#GraphNets.gfview"><code>GraphNets.gfview</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">gfview(t::NamedTuple, d1, d2)
+Returns an array view of the edge features contained in the batched output.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/9f71613ec661c2f58f8bc091beed88a0ac2642f5/src/views.jl#L1-L5">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.nfview" href="#GraphNets.nfview"><code>GraphNets.nfview</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">nfview(t::NamedTuple, d1, d2, d3)
 
-Returns an array view of the graph features contained in the batched output.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/feefb1edbb888ef4c6517de5871713bec6369296/src/views.jl#L63-L67">source</a></section></article></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Tuesday 21 March 2023 18:05">Tuesday 21 March 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Returns an array view of the noded features contained in the batched output.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/9f71613ec661c2f58f8bc091beed88a0ac2642f5/src/views.jl#L33-L37">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.gfview" href="#GraphNets.gfview"><code>GraphNets.gfview</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">gfview(t::NamedTuple, d1, d2)
+
+Returns an array view of the graph features contained in the batched output.</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/9f71613ec661c2f58f8bc091beed88a0ac2642f5/src/views.jl#L63-L67">source</a></section></article></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Tuesday 21 March 2023 18:27">Tuesday 21 March 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
