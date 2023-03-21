@@ -8,16 +8,14 @@ end
 Functors.@functor GNCore
 
 """
-GNCore(dims; dropout=0)
+    GNCore(dims; dropout=0)
 
 Initializes an instance of the **`GNCore`** type, representing a GraphNet "core" block.
-
-A **`GNCore`** instance accepts an input array **`x`** of dimensions (C, T, B) and outputs an array of dimensions (HS, T, B). "C" is the channel size (embedding dimension). "T" is the block size (number of input tokens). "B" is the batch size.
 
 The following keyword arguments are supported:
 - `dropout` (Defaults to 0)
 
-## Examples:
+## Example:
 
 ```julia
 dims = (DE, DN, DG) = 3, 4, 5

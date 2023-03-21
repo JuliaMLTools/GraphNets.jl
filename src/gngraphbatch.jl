@@ -1,6 +1,3 @@
-"""
-GNCoreList(input_dim, num_heads; head_size=(input_dim ÷ num_heads), dropout=0)
-"""
 struct GNGraphBatch{A,P,SN2E,DN2E,G2E,E2N,G2N,E2G,N2G,EB,NB}
     adj_mats::A
     padded_adj_mats::P # (PN,PN,B)

@@ -6,9 +6,7 @@ Initializes an instance of the **`GNCoreList`** type, representing a sequence of
 The following keyword arguments are supported:
 - `dropout` (Defaults to 0)
 
-A **`GNCoreList`** instance accepts an input array **`x`** of dimensions (C, T, B) and outputs an array of dimensions (HS, T, B). "C" is the channel size (embedding dimension). "T" is the block size (number of input tokens). "B" is the batch size.
-
-## Examples:
+## Example:
 
 ```julia
 dims = (DE, DN, DG) = 3, 4, 5

@@ -8,11 +8,9 @@ end
 Functors.@functor GNBlock
 
 """
-GNBlock(in => out;  dropout=0)
+    GNBlock(in => out;  dropout=0)
 
 Initializes an instance of the **`GNBlock`** type, representing a GraphNet block.
-
-A **`GNBlock`** instance accepts an input array **`x`** of dimensions (C, T, B) and outputs an array of dimensions (HS, T, B). "C" is the channel size (embedding dimension). "T" is the block size (number of input tokens). "B" is the batch size.
 
 The following keyword arguments are supported:
 - `dropout` (Defaults to 0)
