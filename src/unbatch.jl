@@ -1,5 +1,7 @@
 """
     unbatch(t::NamedTuple)
+
+    **`unbatch`** is the inverse of **`batch`**. It takes a batched tuple and returns a tuple of unbatched arrays.
 """
 function unbatch(t::NamedTuple)
     @assert Set(keys(t)) == Set((:graphs, :ef, :nf, :gf))
