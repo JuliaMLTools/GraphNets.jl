@@ -10,7 +10,7 @@
 [docs-stable-url]: https://juliamltools.github.io/GraphNets.jl/stable/
 
 
-## Example usage
+## Setup
 
 ```julia
 using GraphNets
@@ -25,11 +25,11 @@ Y_DG = 5 # Output feature dimension of graphs
 block = GNBlock(
     (X_DE,X_DN,X_DG) => (Y_DE,Y_DN,Y_DG)
 )
+```
 
-##########################################################
-# Example #1: Batch of graphs with same structure (same adjacency matrix)
-##########################################################
+### Example 1: Batch of graphs with same structure (same adjacency matrix)
 
+```julia
 adj_mat = [
     1 0 1;
     1 1 0;
@@ -65,11 +65,11 @@ y = block(x) |> unbatch
 
 # Get the output graph edges of the 2nd graph
 @assert size(y.gf[:,2]) == (Y_DG,)
+```
 
-##########################################################
-# Example #2: Batch of graphs with different structures
-##########################################################
+### Example 2: Batch of graphs with different structures
 
+```julia
 adj_mat_1 = [
     1 0 1;
     1 1 0;
@@ -122,11 +122,11 @@ y = y_batched |> unbatch
 @assert size(y.ef[2]) == (Y_DE, num_edges_2) # edge features for graph 2
 @assert size(y.nf[2]) == (Y_DN, num_nodes_2) # node features for graph 2
 @assert size(y.gf[2]) == (Y_DG,) # graph features for graph 2
+```
 
-####
-# Example #3: Sequential GraphNet blocks
-####
+### Example 3: Encoder -> Core -> Decoder (sequential blocks)
 
+```julia
 input_dims = (X_DE, X_DN, X_DG)
 core_dims = (10, 5, 3)
 output_dims = (Y_DE, Y_DN, Y_DG)
