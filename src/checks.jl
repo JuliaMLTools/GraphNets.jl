@@ -1,3 +1,23 @@
+function checks(adj_mat::AbstractMatrix, ef, nf, gf)
+    checkshapes3d(ef, nf, gf)
+    checksamebatchsize3d(ef, nf, gf)
+    checknodeedgecounts(adj_mat, ef, nf)
+end
+
+function checks(adj_mats::AbstractVector, ef, nf, gf)
+    @assert length(adj_mats) > 0
+    checksamebatchsize2d(adj_mats, ef, nf, gf)
+    # Check shapes
+    for adj_mat in adj_mats
+        @assert ndims(adj_mat) == 2 # (N, N)
+    end
+    checkshapes2d(ef, nf, gf)
+    # Check node/edge counts
+    for (adj_mat, ef_i, nf_i) in zip(adj_mats, ef, nf)
+        checknodeedgecounts(adj_mat, ef_i, nf_i)
+    end
+end
+
 ############################
 # Check node/edge counts
 ############################
