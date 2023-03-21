@@ -1,6 +1,5 @@
 # GraphNets.jl
 
-[![][docs-stable-img]][docs-stable-url]
 [![][docs-dev-img]][docs-dev-url]
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
