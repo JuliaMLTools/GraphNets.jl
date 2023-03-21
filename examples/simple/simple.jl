@@ -45,13 +45,13 @@ y = block(x) |> unbatch
 @assert size(y.gf) == (Y_DG, batch_size)
 
 # Get the output graph edges of the 1st graph
-y.ef[:,:,1] # (Y_DE, num_edges)
+@assert size(y.ef[:,:,1]) == (Y_DE, num_edges)
 
 # Get the output node edges of the 1st graph
-y.nf[:,:,1] # (Y_DN, num_nodes)
+@assert size(y.nf[:,:,1]) == (Y_DN, num_nodes)
 
 # Get the output graph edges of the 2nd graph
-y.gf[:,2] # (Y_DG,)
+@assert size(y.gf[:,2]) == (Y_DG,)
 
 
 ##########################################################
