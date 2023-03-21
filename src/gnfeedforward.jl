@@ -1,7 +1,7 @@
-struct GNFeedForward
-    eff
-    nff
-    gff
+struct GNFeedForward{E,N,G}
+    eff::E
+    nff::N
+    gff::G
 end
 
 Functors.@functor GNFeedForward

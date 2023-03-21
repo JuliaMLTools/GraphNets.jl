@@ -1,7 +1,7 @@
-struct GNGraphNorm
-    edgeln
-    nodeln
-    graphln
+struct GNGraphNorm{E,N,G}
+    edgeln::E
+    nodeln::N
+    graphln::G
 end
 
 Functors.@functor GNGraphNorm

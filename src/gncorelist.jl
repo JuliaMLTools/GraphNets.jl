@@ -36,8 +36,8 @@ y = core_list(x) |> unbatch
 @assert size(y.gf) == (DG, batch_size)
 ```
 """
-struct GNCoreList
-    list
+struct GNCoreList{T<:Union{Tuple, NamedTuple, AbstractVector}}
+    list::T
 end
 
 Functors.@functor GNCoreList

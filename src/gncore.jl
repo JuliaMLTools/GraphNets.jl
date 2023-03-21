@@ -1,8 +1,8 @@
-struct GNCore
-    block
-    ffwd
-    gn1
-    gn2
+struct GNCore{B,F,N1,N2}
+    block::B
+    ffwd::F
+    gn1::N1
+    gn2::N2
 end
 
 Functors.@functor GNCore

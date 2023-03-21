@@ -1,18 +1,18 @@
 """
 GNCoreList(input_dim, num_heads; head_size=(input_dim ÷ num_heads), dropout=0)
 """
-struct GNGraphBatch
-    adj_mats
-    padded_adj_mats # (PN,PN,B)
-    srcnode2edge_broadcaster # (PN, PN^2, B)
-    dstnode2edge_broadcaster # (PN, PN^2, B)
-    graph2edge_broadcaster # (1, PN^2, B)
-    edge2node_broadcaster # (PN^2, PN, B)
-    graph2node_broadcaster # (1, PN, B)
-    edge2graph_broadcaster #
-    node2graph_broadcaster #
-    edge_block_size
-    node_block_size
+struct GNGraphBatch{A,P,SN2E,DN2E,G2E,E2N,G2N,E2G,N2G,EB,NB}
+    adj_mats::A
+    padded_adj_mats::P # (PN,PN,B)
+    srcnode2edge_broadcaster::SN2E # (PN, PN^2, B)
+    dstnode2edge_broadcaster::DN2E # (PN, PN^2, B)
+    graph2edge_broadcaster::G2E # (1, PN^2, B)
+    edge2node_broadcaster::E2N # (PN^2, PN, B)
+    graph2node_broadcaster::G2N # (1, PN, B)
+    edge2graph_broadcaster::E2G #
+    node2graph_broadcaster::N2G #
+    edge_block_size::EB
+    node_block_size::NB
 end
 
 Functors.@functor GNGraphBatch (
@@ -109,9 +109,3 @@ function getnode2edgebroadcaster(padded_adj_mats, src_dst_op=identity)
     end
     dst
 end
-
-
-
-
-
-
