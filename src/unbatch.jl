@@ -1,3 +1,6 @@
+"""
+    unbatch(t::NamedTuple)
+"""
 function unbatch(t::NamedTuple)
     @assert Set(keys(t)) == Set((:graphs, :ef, :nf, :gf))
     (; graphs, ef, nf, gf) = t

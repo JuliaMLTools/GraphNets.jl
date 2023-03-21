@@ -1,3 +1,6 @@
+"""
+GNCoreList(input_dim, num_heads; head_size=(input_dim ÷ num_heads), dropout=0)
+"""
 struct GNGraphBatch
     adj_mats
     padded_adj_mats # (PN,PN,B)
@@ -8,13 +11,24 @@ struct GNGraphBatch
     graph2node_broadcaster # (1, PN, B)
     edge2graph_broadcaster #
     node2graph_broadcaster #
+    edge_block_size
+    node_block_size
 end
 
-Functors.@functor GNGraphBatch
+Functors.@functor GNGraphBatch (
+    srcnode2edge_broadcaster, 
+    dstnode2edge_broadcaster,
+    graph2edge_broadcaster,
+    edge2node_broadcaster,
+    graph2node_broadcaster,
+    edge2graph_broadcaster,
+    node2graph_broadcaster,
+)
 
 function GNGraphBatch(adj_mats)
     padded_adj_mats = padadjmats(adj_mats)
-    PN = size(padded_adj_mats, 1)
+    node_block_size = size(padded_adj_mats, 1)
+    edge_block_size = node_block_size^2
     GNGraphBatch(
         adj_mats,
         padded_adj_mats,
@@ -23,8 +37,10 @@ function GNGraphBatch(adj_mats)
         getgraph2edgebroadcaster(padded_adj_mats),
         getedge2nodebroadcaster(padded_adj_mats),
         getgraph2nodebroadcaster(padded_adj_mats),
-        getedge2graphbroadcaster(adj_mats, PN),
-        getnode2graphbroadcaster(adj_mats, PN),
+        getedge2graphbroadcaster(adj_mats, node_block_size),
+        getnode2graphbroadcaster(adj_mats, node_block_size),
+        edge_block_size,
+        node_block_size,
     )
 end
 

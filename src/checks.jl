@@ -45,7 +45,7 @@ checknodeedgecounts(adj_mat, ef::Nothing, nf::Nothing) = nothing
 
 function checkshapes3d(ef, nf, gf)
     @assert ndims(ef) == ndims(nf) == 3 # (C, T, B)
-    @assert ndims(gf) == 2 # (C, B)
+    @assert ndims(gf) == 2 "$(ndims(gf)) != 2" # (C, B)
 end
 function checkshapes3d(ef,nf,gf::Nothing)
     @assert ndims(ef) == ndims(nf) == 3 # (C, T, B)

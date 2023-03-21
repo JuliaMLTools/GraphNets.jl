@@ -1,3 +1,8 @@
+"""
+    efview(t::NamedTuple, d1, d2, d3)
+
+    Returns an array view of the edge features contained in the batched output.
+"""
 function efview(t::NamedTuple, d1, d2, d3)
     @assert issubset(Set((:graphs, :ef)), Set(keys(t)))
     (; graphs, ef) = t
@@ -25,8 +30,11 @@ function efview(adj_mats::AbstractVector, ef, d1, d2, d3::Integer)
     @view unbatched_view[d1, d2]
 end
 
+"""
+    nfview(t::NamedTuple, d1, d2, d3)
 
-
+    Returns an array view of the noded features contained in the batched output.
+"""
 function nfview(t::NamedTuple, d1, d2, d3)
     @assert issubset(Set((:graphs, :nf)), Set(keys(t)))
     (; graphs, nf) = t
@@ -52,9 +60,11 @@ function nfview(adj_mats::AbstractVector, nf, d1, d2, d3::Integer)
     @view unbatched_view[d1, d2]
 end
 
+"""
+    gfview(t::NamedTuple, d1, d2)
 
-
-
+    Returns an array view of the graph features contained in the batched output.
+"""
 function gfview(t::NamedTuple, d1, d2)
     @assert issubset(Set((:graphs, :gf)), Set(keys(t)))
     (; graphs, gf) = t
