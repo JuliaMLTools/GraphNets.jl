@@ -259,7 +259,7 @@ function unbatch(adj_mat::AbstractMatrix, ef, nf, gf)
         graphs=adj_mat,
         ef=unbatchef(adj_mat, ef),
         nf=nf,
-        gf=unbatchgf(gf),
+        gf=unbatchgf(adj_mat, gf),
     )
 end
 
@@ -269,7 +269,7 @@ function unbatch(adj_mats::AbstractVector, ef, nf, gf)
         graphs=adj_mats,
         ef=unbatchef(adj_mats, ef),
         nf=unbatchnf(adj_mats, nf),
-        gf=unbatchgf(gf),
+        gf=unbatchgf(adj_mats, gf),
     )
 end
 
@@ -280,13 +280,19 @@ unbatchef(adj_mats, ::Nothing) = nothing
 unbatchnf(adj_mats, nf) = unpadnf(adj_mats, nf)
 unbatchnf(adj_mats, ::Nothing) = nothing
 
-unbatchgf(gf) = reshape(gf, size(gf,1), :)
-unbatchgf(::Nothing) = nothing
+unbatchgf(adj_mats, gf) = unpadgf(adj_mats, gf)
+unbatchgf(adj_mats, ::Nothing) = nothing
+
+function unpadgf(adj_mats::AbstractMatrix, gf)
+    reshape(gf, size(gf,1), :)
+end
+function unpadgf(adj_mats::AbstractVector, gf)
+    collect(eachcol(reshape(gf, size(gf,1), :)))
+end
 
 function unpadef(adj_mat::AbstractMatrix, ef)
     @view ef[:, findall(isone, view(adj_mat, :)), :]  
 end
-
 function unpadef(adj_mats::AbstractVector, ef)
     padded_adj_mats = padadjmats(adj_mats)
     map(enumerate(eachslice(padded_adj_mats; dims=3))) do (graph_idx,padded_adj_mat)

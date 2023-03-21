@@ -15,6 +15,11 @@
 ```julia
 using GraphNets
 
+
+##########################################################
+# Example #: Batch of graphs with same structure (same adjacency matrix)
+##########################################################
+
 adj_mat = [
     1 0 1;
     1 1 0;
@@ -63,7 +68,7 @@ adj_mat_1 = [
     1 1 0;
     0 0 1;
 ] # Adjacency matrix 1
-num_nodes_1 = length(adj_mat_1)
+num_nodes_1 = size(adj_mat_1, 1)
 num_edges_1 = length(filter(isone, adj_mat_1))
 
 adj_mat_2 = [
@@ -72,7 +77,7 @@ adj_mat_2 = [
     0 0 1 0;
     1 1 0 1;
 ] # Adjacency matrix 2
-num_nodes_2 = length(adj_mat_2)
+num_nodes_2 = size(adj_mat_2, 1)
 num_edges_2 = length(filter(isone, adj_mat_2))
 
 edge_features = [

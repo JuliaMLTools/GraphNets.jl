@@ -1,6 +1,91 @@
 using GraphNets
 using Test
 
+@testset verbose = true "readme" begin
+
+    # Setup
+    X_DE = 10 # Input feature dimension of edges
+    X_DN = 5 # Input feature dimension of nodes
+    X_DG = 0 # Input feature dimension of graphs (no graph level input data)
+    Y_DE = 3 # Output feature dimension of edges
+    Y_DN = 4 # Output feature dimension of nodes
+    Y_DG = 5 # Output feature dimension of graphs
+    
+    block = GNBlock(
+        (X_DE,X_DN,X_DG) => (Y_DE,Y_DN,Y_DG)
+    )
+
+    @testset "readme" begin
+        adj_mat = [
+            1 0 1;
+            1 1 0;
+            0 0 1;
+        ] # Adjacency matrix
+        num_nodes = size(adj_mat, 1)
+        num_edges = length(filter(isone, adj_mat))
+        batch_size = 2
+        edge_features = rand(Float32, X_DE, num_edges, batch_size)
+        node_features = rand(Float32, X_DN, num_nodes, batch_size)
+        graph_features = nothing # no graph level input features
+        x = (
+            graphs=adj_mat,  # All graphs in this batch have same structure
+            ef=edge_features, 
+            nf=node_features,
+            gf=graph_features
+        ) |> batch
+        y = block(x) |> unbatch
+        @test size(y.ef) == (Y_DE, num_edges, batch_size)
+        @test size(y.nf) == (Y_DN, num_nodes, batch_size)
+        @test size(y.gf) == (Y_DG, batch_size)
+    end
+
+    @testset "readme2" begin
+        adj_mat_1 = [
+            1 0 1;
+            1 1 0;
+            0 0 1;
+        ] # Adjacency matrix 1
+        num_nodes_1 = size(adj_mat_1, 1)
+        num_edges_1 = length(filter(isone, adj_mat_1))
+
+        adj_mat_2 = [
+            1 0 1 0;
+            1 1 0 1;
+            0 0 1 0;
+            1 1 0 1;
+        ] # Adjacency matrix 2
+        num_nodes_2 = size(adj_mat_2, 1)
+        num_edges_2 = length(filter(isone, adj_mat_2))
+
+        edge_features = [
+            rand(Float32, X_DE, num_edges_1),
+            rand(Float32, X_DE, num_edges_2),
+        ]
+        node_features = [
+            rand(Float32, X_DN, num_nodes_1),
+            rand(Float32, X_DN, num_nodes_2),
+        ]
+        graph_features = nothing # no graph level input features
+
+        x = (
+            graphs=[adj_mat_1,adj_mat_2],  # Graphs in this batch have different structure
+            ef=edge_features, 
+            nf=node_features,
+            gf=graph_features
+        ) |> batch
+
+        y = block(x) |> unbatch
+
+        @test size(y.ef[1]) == (Y_DE, num_edges_1)
+        @test size(y.nf[1]) == (Y_DN, num_nodes_1)
+        @test size(y.gf[1]) == (Y_DG,)
+
+        @test size(y.ef[2]) == (Y_DE, num_edges_2)
+        @test size(y.nf[2]) == (Y_DN, num_nodes_2)
+        @test size(y.gf[2]) == (Y_DG,)
+    end
+end
+
 @testset "batch_inverse_2D" begin
     adj_mat_1 = [
         1 0 1;
@@ -126,39 +211,6 @@ end
     ]
     padded = padnf(adj_mats, nfs)
     @test size(padded) == (nf_dim, max_num_nodes, batch_size)
-end
-
-@testset "readme" begin
-    adj_mat = [
-        1 0 1;
-        1 1 0;
-        0 0 1;
-    ] # Adjacency matrix
-    num_nodes = size(adj_mat, 1)
-    num_edges = length(filter(isone, adj_mat))
-    X_DE = 10 # Input feature dimension of edges
-    X_DN = 5 # Input feature dimension of nodes
-    X_DG = 0 # Input feature dimension of graphs (no graph level input data)
-    Y_DE = 3 # Output feature dimension of edges
-    Y_DN = 4 # Output feature dimension of nodes
-    Y_DG = 5 # Output feature dimension of graphs
-    block = GNBlock(
-        (X_DE,X_DN,X_DG) => (Y_DE,Y_DN,Y_DG)
-    )
-    batch_size = 2
-    edge_features = rand(Float32, X_DE, num_edges, batch_size)
-    node_features = rand(Float32, X_DN, num_nodes, batch_size)
-    graph_features = nothing # no graph level input features
-    x = (
-        graphs=adj_mat,  # All graphs in this batch have same structure
-        ef=edge_features, 
-        nf=node_features,
-        gf=graph_features
-    ) |> batch
-    y = block(x) |> unbatch
-    @test size(y.ef) == (Y_DE, num_edges, batch_size)
-    @test size(y.nf) == (Y_DN, num_nodes, batch_size)
-    @test size(y.gf) == (Y_DG, batch_size)
 end
 
 @testset "padadjmats" begin
