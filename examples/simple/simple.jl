@@ -12,7 +12,6 @@ block = GNBlock(
     (X_DE,X_DN,X_DG) => (Y_DE,Y_DN,Y_DG)
 )
 
-
 ##########################################################
 # Example #1: Batch of graphs with same structure (same adjacency matrix)
 ##########################################################
@@ -52,7 +51,6 @@ y = block(x) |> unbatch
 
 # Get the output graph edges of the 2nd graph
 @assert size(y.gf[:,2]) == (Y_DG,)
-
 
 ##########################################################
 # Example #2: Batch of graphs with different structures
@@ -110,7 +108,6 @@ y = y_batched |> unbatch
 @assert size(y.ef[2]) == (Y_DE, num_edges_2) # edge features for graph 2
 @assert size(y.nf[2]) == (Y_DN, num_nodes_2) # node features for graph 2
 @assert size(y.gf[2]) == (Y_DG,) # graph features for graph 2
-
 
 ####
 # Example #3: Sequential GraphNet blocks
