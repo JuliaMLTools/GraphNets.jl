@@ -13,6 +13,8 @@
 ## Example usage
 
 ```julia
+using GraphNets
+
 X_DE = 10 # Input feature dimension of edges
 X_DN = 5 # Input feature dimension of nodes
 X_DG = 0 # Input feature dimension of graphs (no graph level input data)
