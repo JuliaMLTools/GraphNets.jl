@@ -1,22 +1,21 @@
 cd(@__DIR__)
 using GraphNets
 
-#################### SETUP ####################
 X_DE = 10 # Input feature dimension of edges
-X_DN = 0 # No node input data (dimension zero)
-X_DG = 0 # No graph input data (dimension zero)
+X_DN = 5 # Input feature dimension of nodes
+X_DG = 0 # Input feature dimension of graphs (no graph level input data)
 Y_DE = 3 # Output feature dimension of edges
 Y_DN = 4 # Output feature dimension of nodes
 Y_DG = 5 # Output feature dimension of graphs
+
 block = GNBlock(
     (X_DE,X_DN,X_DG) => (Y_DE,Y_DN,Y_DG)
 )
-################################################
 
 
-####
-# Example #1: GNN input graphs have same structure (same graph), but different features
-####
+##########################################################
+# Example #1: Batch of graphs with same structure (same adjacency matrix)
+##########################################################
 
 adj_mat = [
     1 0 1;
@@ -24,121 +23,107 @@ adj_mat = [
     0 0 1;
 ] # Adjacency matrix
 
-adj_mats = [adj_mat, adj_mat]
-G = length(adj_mats) # Number of graphs
-N = size(adj_mat, 1) # Number of nodes in each graph
-graphs = GNGraphBatch(adj_mats)
+num_nodes = size(adj_mat, 1)
+num_edges = length(filter(isone, adj_mat))
 
-# Edge features for graph 1
-edge_features_1 = rand(Float32, X_DE, N^2) # (X_DE, N^2)
-
-# Edge features for graph 2
-edge_features_2 = rand(Float32, X_DE, N^2) # (X_DE, N^2)
-
-# Batch of edge features
-edge_features = cat(edge_features_1, edge_features_2; dims=3) # (X_DE, N^2, G) 
+batch_size = 2
+edge_features = rand(Float32, X_DE, num_edges, batch_size)
+node_features = rand(Float32, X_DN, num_nodes, batch_size)
+graph_features = nothing # no graph level input features
 
 x = (
-    graphs = graphs,
-    ef = edge_features,
-    nf = nothing,
-    gf = nothing,
-)
+    graphs=adj_mat, # All graphs in this batch have same structure
+    ef=edge_features, # (X_DE, num_edges, batch_size)
+    nf=node_features, # (X_DN, num_nodes, batch_size)
+    gf=graph_features # (X_DG, batch_size)
+) |> batch
 
-_, y_e, y_n, y_g = out = block(x)
-@assert size(y_e) == (Y_DE, N^2, G)
-@assert size(y_n) == (Y_DN, N, G)
-@assert size(y_g) == (Y_DG, 1, G)
+y = block(x) |> unbatch
 
-# Get the graph edges of the 1st graph
-getedgefeatures(out, 1)
-getnodefeatures(out, 1)
-getgraphfeatures(out, 1)
+@assert size(y.ef) == (Y_DE, num_edges, batch_size)
+@assert size(y.nf) == (Y_DN, num_nodes, batch_size)
+@assert size(y.gf) == (Y_DG, batch_size)
 
-# Get the graph edges of the 2nd graph
-getedgefeatures(out, 2)
-getnodefeatures(out, 2)
-getgraphfeatures(out, 2)
+# Get the output graph edges of the 1st graph
+y.ef[:,:,1] # (Y_DE, num_edges)
+
+# Get the output node edges of the 1st graph
+y.nf[:,:,1] # (Y_DN, num_nodes)
+
+# Get the output graph edges of the 2nd graph
+y.gf[:,2] # (Y_DG,)
 
 
-
-####
-# Example #2: GNN input graphs have different structures (different graphs).
-####
+##########################################################
+# Example #2: Batch of graphs with different structures
+##########################################################
 
 adj_mat_1 = [
     1 0 1;
     1 1 0;
     0 0 1;
-] # Adjacency matrix for graph 1
-E1 = sum(adj_mat_1[:] .== 1)
+] # Adjacency matrix 1
+num_nodes_1 = size(adj_mat_1, 1)
+num_edges_1 = length(filter(isone, adj_mat_1))
 
 adj_mat_2 = [
-    0 1 0 1;
-    0 0 1 0;
+    1 0 1 0;
     1 1 0 1;
     0 0 1 0;
-] # Adjacency matrix for graph 2
-E2 = sum(adj_mat_2[:] .== 1)
+    1 1 0 1;
+] # Adjacency matrix 2
+num_nodes_2 = size(adj_mat_2, 1)
+num_edges_2 = length(filter(isone, adj_mat_2))
 
-adj_mats = [adj_mat_1, adj_mat_2]
-G = length(adj_mats) # Number of graphs
-graphs = GNGraphBatch(adj_mats)
-
-N1 = size(adj_mat_1, 1) # Number of nodes in graph 1
-N2 = size(adj_mat_2, 1) # Number of nodes in graph 2
-
-edge_features = paddedbatch(
-    [
-        # Edge features for graph 1
-        rand(Float32, X_DE, N1^2), # (X_DE, N1^2)
-        
-        # Edge features for graph 2
-        rand(Float32, X_DE, N2^2), # (X_DE, N2^2)
-    ]
-)
-
-# EBS (edge block size) is the maximum number of edges of any graph in the batch
-EBS = size(edge_features, 2)
-# NBS (node block size) is the maximum number of nodes of any graph in the batch
-NBS = maximum(size.([adj_mat_1,adj_mat_2], 1))
+edge_features = [
+    rand(Float32, X_DE, num_edges_1),
+    rand(Float32, X_DE, num_edges_2),
+]
+node_features = [
+    rand(Float32, X_DN, num_nodes_1),
+    rand(Float32, X_DN, num_nodes_2),
+]
+graph_features = nothing # no graph level input features
 
 x = (
-    graphs = graphs,
-    ef = edge_features,
-    nf = nothing,
-    gf = nothing,
-)
+    graphs=[adj_mat_1,adj_mat_2],  # Graphs in this batch have different structure
+    ef=edge_features, 
+    nf=node_features,
+    gf=graph_features
+) |> batch
 
-_, y_e, y_n, y_g = out = block(x)
-@assert size(y_e) == (Y_DE, EBS, G)
-@assert size(y_n) == (Y_DN, NBS, G)
-@assert size(y_g) == (Y_DG, 1, G)
+y_batched = block(x)
+y = y_batched |> unbatch
 
-# Get the edge features of the 1st graph
-getedgefeatures(out, 1)
-getnodefeatures(out, 1)
-getgraphfeatures(out, 1)
+# Memory-efficient view of features for a batch with different graph structures
+@assert size(efview(y_batched, :, :, 1)) == (Y_DE, num_edges_1) # edge features for graph 1
+@assert size(nfview(y_batched, :, :, 1)) == (Y_DN, num_nodes_1)  # edge features for graph 1
+@assert size(gfview(y_batched, :, 1)) == (Y_DG,) # graph features for graph 1
+@assert size(efview(y_batched, :, :, 2)) == (Y_DE, num_edges_2) # edge features for graph 2
+@assert size(nfview(y_batched, :, :, 2)) == (Y_DN, num_nodes_2) # node features for graph 2
+@assert size(gfview(y_batched, :, 2)) == (Y_DG,) # graph features for graph 2
 
-# Get the graph edges of the 2nd graph
-getedgefeatures(out, 2)
-getnodefeatures(out, 2)
-getgraphfeatures(out, 2)
-
+# Copied array of features (less efficient) for a batch with different graph structures
+@assert size(y.ef[1]) == (Y_DE, num_edges_1) # edge features for graph 1
+@assert size(y.nf[1]) == (Y_DN, num_nodes_1)  # edge features for graph 1
+@assert size(y.gf[1]) == (Y_DG,) # graph features for graph 1
+@assert size(y.ef[2]) == (Y_DE, num_edges_2) # edge features for graph 2
+@assert size(y.nf[2]) == (Y_DN, num_nodes_2) # node features for graph 2
+@assert size(y.gf[2]) == (Y_DG,) # graph features for graph 2
 
 
 ####
-# Example #3: Sequential GNN blocks
+# Example #3: Sequential GraphNet blocks
 ####
 
 input_dims = (X_DE, X_DN, X_DG)
 core_dims = (10, 5, 3)
 output_dims = (Y_DE, Y_DN, Y_DG)
 
-struct GNNModel
-    encoder
-    core_list
-    decoder
+struct GNNModel{E,C,D}
+    encoder::E
+    core_list::C
+    decoder::D
 end
 
 function GNNModel(; n_cores=2)
@@ -160,20 +145,25 @@ adj_mat = [
     1 1 0;
     0 0 1;
 ]
-adj_mats = [adj_mat]
-N = size(adj_mat,1) # number of nodes
-G = length(adj_mats) # number of graphs
+
+num_nodes = size(adj_mat, 1)
+num_edges = length(filter(isone, adj_mat))
+
+batch_size = 2
+edge_features = rand(Float32, X_DE, num_edges, batch_size)
+node_features = rand(Float32, X_DN, num_nodes, batch_size)
+graph_features = nothing # no graph level input features
 
 x = (
-    graphs = GNGraphBatch(adj_mats),
-    ef = rand(Float32, X_DE, N^2, G),
-    nf = nothing,
-    gf = nothing,
-)
+    graphs=adj_mat, # All graphs in this batch have same structure
+    ef=edge_features, # (X_DE, num_edges, batch_size)
+    nf=node_features, # (X_DN, num_nodes, batch_size)
+    gf=graph_features # (X_DG, batch_size)
+) |> batch
 
-out = m(x)
+y = block(x) |> unbatch
 
-@assert size(getedgefeatures(out, 1)) == (Y_DE, 5)
-@assert size(getnodefeatures(out, 1)) == (Y_DN, 3)
-@assert size(getgraphfeatures(out, 1)) == (Y_DG,)
+@assert size(y.ef) == (Y_DE, num_edges, batch_size)
+@assert size(y.nf) == (Y_DN, num_nodes, batch_size)
+@assert size(y.gf) == (Y_DG, batch_size)
 

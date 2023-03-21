@@ -273,7 +273,6 @@ function unbatch(adj_mats::AbstractVector, ef, nf, gf)
     )
 end
 
-
 unbatchef(adj_mats, ef) = unpadef(adj_mats, ef)
 unbatchef(adj_mats, ::Nothing) = nothing
 
@@ -291,7 +290,7 @@ function unpadgf(adj_mats::AbstractVector, gf)
 end
 
 function unpadef(adj_mat::AbstractMatrix, ef)
-    @view ef[:, findall(isone, view(adj_mat, :)), :]  
+    @view ef[:, findall(isone, view(adj_mat, :)), :]
 end
 function unpadef(adj_mats::AbstractVector, ef)
     padded_adj_mats = padadjmats(adj_mats)

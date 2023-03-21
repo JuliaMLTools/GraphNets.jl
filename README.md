@@ -15,20 +15,6 @@
 ```julia
 using GraphNets
 
-
-##########################################################
-# Example #: Batch of graphs with same structure (same adjacency matrix)
-##########################################################
-
-adj_mat = [
-    1 0 1;
-    1 1 0;
-    0 0 1;
-] # Adjacency matrix
-
-num_nodes = size(adj_mat, 1)
-num_edges = length(filter(isone, adj_mat))
-
 X_DE = 10 # Input feature dimension of edges
 X_DN = 5 # Input feature dimension of nodes
 X_DG = 0 # Input feature dimension of graphs (no graph level input data)
@@ -39,6 +25,20 @@ Y_DG = 5 # Output feature dimension of graphs
 block = GNBlock(
     (X_DE,X_DN,X_DG) => (Y_DE,Y_DN,Y_DG)
 )
+
+
+##########################################################
+# Example #1: Batch of graphs with same structure (same adjacency matrix)
+##########################################################
+
+adj_mat = [
+    1 0 1;
+    1 1 0;
+    0 0 1;
+] # Adjacency matrix
+
+num_nodes = size(adj_mat, 1)
+num_edges = length(filter(isone, adj_mat))
 
 batch_size = 2
 edge_features = rand(Float32, X_DE, num_edges, batch_size)
@@ -57,6 +57,16 @@ y = block(x) |> unbatch
 @assert size(y.ef) == (Y_DE, num_edges, batch_size)
 @assert size(y.nf) == (Y_DN, num_nodes, batch_size)
 @assert size(y.gf) == (Y_DG, batch_size)
+
+# Get the output graph edges of the 1st graph
+y.ef[:,:,1] # (Y_DE, num_edges)
+
+# Get the output node edges of the 1st graph
+y.nf[:,:,1] # (Y_DN, num_nodes)
+
+# Get the output graph edges of the 2nd graph
+y.gf[:,2] # (Y_DG,)
+
 
 
 ##########################################################
@@ -97,15 +107,24 @@ x = (
     gf=graph_features
 ) |> batch
 
-y = block(x) |> unbatch
+y_batched = block(x)
+y = y_batched |> unbatch
 
-@assert size(y.ef[1]) == (Y_DE, num_edges_1)
-@assert size(y.nf[1]) == (Y_DN, num_nodes_1)
-@assert size(y.gf[1]) == (Y_DG,)
+# Memory-efficient view of features for a batch with different graph structures
+@assert size(efview(y_unbatched, :, :, 1)) == (Y_DE, num_edges_1) # edge features for graph 1
+@assert size(nfview(y_unbatched, :, :, 1)) == (Y_DN, num_nodes_1)  # edge features for graph 1
+@assert size(gfview(y_unbatched, :, 1)) == (Y_DG,) # graph features for graph 1
+@assert size(efview(y_unbatched, :, :, 2)) == (Y_DE, num_edges_1) # edge features for graph 2
+@assert size(nfview(y_unbatched, :, :, 2)) == (Y_DN, num_nodes_1) # node features for graph 2
+@assert size(gfview(y_unbatched, :, 2)) == (Y_DG,) # graph features for graph 2
 
-@assert size(y.ef[2]) == (Y_DE, num_edges_2)
-@assert size(y.nf[2]) == (Y_DN, num_nodes_2)
-@assert size(y.gf[2]) == (Y_DG,)
+# Copied array of features for a batch with different graph structures
+@assert size(y.ef[1]) == (Y_DE, num_edges_1) # edge features for graph 1
+@assert size(y.nf[1]) == (Y_DN, num_nodes_1)  # edge features for graph 1
+@assert size(y.gf[1]) == (Y_DG,) # graph features for graph 1
+@assert size(y.ef[2]) == (Y_DE, num_edges_2) # edge features for graph 2
+@assert size(y.nf[2]) == (Y_DN, num_nodes_2) # node features for graph 2
+@assert size(y.gf[2]) == (Y_DG,) # graph features for graph 2
 ```
 
 
