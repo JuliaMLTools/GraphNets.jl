@@ -1,4 +1,6 @@
 cd(@__DIR__)
+import Pkg
+Pkg.activate(".")
 include("imports.jl")
 Random.seed!(1234)
 include("helper.jl")
@@ -7,51 +9,42 @@ include("helper.jl")
 # Create a sample graph with input/output features
 #####################################################
 
-n = 5 # number of nodes
+n = 6 # number of nodes
 adj_mat = ones(Int, n, n) # fully connect graph
+num_edges = length(filter(isone, adj_mat))
 x_nf = rand(1:100, n) # Sample input node features
 y_nf = Int.(x_nf .== minimum(x_nf)) # Sample output node features
-y_ef = getoutputedgefeatures(x_nf) # Output edge features
+y_ef = rand(0:1, num_edges) # Output edge features
 
 
 #####################################################
 # (Optional) Use EuclidGraphs.jl to visualize the input and output graphs
 #####################################################
 using EuclidGraphs
-pentagon = [(-3,3), (-2,0), (2,0), (3,3), (0,5)] # XY coordinates of a pentagon
-# input featured graph
-x_features = (
-    ef = nothing,
-    nf = x_nf, # input node features
-    gf = nothing,
-)
-x_graph = EuclidGraph(pentagon)
-x_graph(x_features) # write("x.svg", x_graph(x_features))
-# output featured graph
-y_features = (
-    ef = y_ef, # output edge features
-    nf = y_nf, # output node features
-    gf = nothing,
-)
+pentagon = [(0,-10),(0,70),(75,21),(49,-70),(-49,-70),(-75,21)] # XY coordinates of a pentagon
+x_graph = EuclidGraph(pentagon, adj_mat=adj_mat)
+x_graph() # Renders in VSCode
+# write("input-graph.svg", x_graph())
+num_edges = length(filter(isone, adj_mat))
+num_nodes = size(adj_mat, 1)
+node_features = zeros(Int, num_nodes)
+node_features[rand(1:num_nodes)] = 1
 y_graph = EuclidGraph(
-    pentagon;
-    node_style=(nf)
-        (; fill=(iszero(nf) ? "green" : "transparent"))
-    end
-    edge_style=(ef)
-        if iszero(ef)
-            width=0.1
-            color="#efefef"
-        else
-            width=1,
-            color="green"
-        end
-        (width=width, color=color)
+    pentagon,
+    adj_mat=adj_mat,
+    node_style=(node) -> NodeStyle(
+        inner_fill=("green"),
+        stroke="#ccc",
+        value=(node) -> nothing,
+    ),
+    edge_style=(edge) -> begin
+        EdgeStyle(
+            stroke=(isone(edge.features[edge.idx]) ? "green" : "#ccc"),
+        )
     end
 )
-y_graph(y_features) # write("y.svg", y_graph(y_features))
-
-
+y_graph(node_features, y_ef) # Renders in VSCode
+# write("output-graph.svg", g2(node_features, edge_features))
 
 
 # batch_size = 64 # how many independent sequences will we process in parallel?
