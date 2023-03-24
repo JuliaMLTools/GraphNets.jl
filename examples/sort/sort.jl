@@ -3,7 +3,6 @@ import Pkg
 Pkg.activate(".")
 include("imports.jl")
 Random.seed!(1234)
-include("helper.jl")
 
 #####################################################
 # Create a sample graph with input/output features
@@ -18,7 +17,7 @@ y_ef = rand(0:1, num_edges) # Output edge features
 
 
 #####################################################
-# (Optional) Use EuclidGraphs.jl to visualize the input and output graphs
+# (Optional) Use JuliaMLTools/EuclidGraphs.jl to visualize the input and output graphs
 #####################################################
 using EuclidGraphs
 pentagon = [(0,-10),(0,70),(75,21),(49,-70),(-49,-70),(-75,21)] # XY coordinates of a pentagon
@@ -37,11 +36,9 @@ y_graph = EuclidGraph(
         stroke="#ccc",
         value=(node) -> nothing,
     ),
-    edge_style=(edge) -> begin
-        EdgeStyle(
-            stroke=(isone(edge.features[edge.idx]) ? "green" : "#ccc"),
-        )
-    end
+    edge_style=(edge) -> EdgeStyle(
+        stroke=(isone(edge.features[edge.idx]) ? "green" : "#ccc"),
+    )
 )
 y_graph(node_features, y_ef) # Renders in VSCode
 # write("output-graph.svg", g2(node_features, edge_features))
