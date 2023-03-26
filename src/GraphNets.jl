@@ -9,7 +9,7 @@ include("checks.jl")
 
 include("gngraphbatch.jl")
 #export padadjmats, getsrcnode2edgebroadcaster, getdstnode2edgebroadcaster
-#export GNGraphBatch
+export GNGraphBatch
 
 include("batch.jl")
 export batch
