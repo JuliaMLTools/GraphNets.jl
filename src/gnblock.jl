@@ -65,5 +65,14 @@ function (m::GNBlock)(x)
     h_ef = (m.edgefn ∘ getedgefninput)(graphs, ef, nf, gf)
     h_nf = (m.nodefn ∘ getnodefninput)(graphs, h_ef, nf, gf)
     h_gf = (m.graphfn ∘ getgraphfninput)(graphs, h_ef, h_nf, gf)
-    (graphs=graphs, ef=h_ef, nf=h_nf, gf=h_gf)
+    (graphs=graphs, ef=h_ef, nf=h_nf, gf=h_gf) |> zerodim2nothing
+end
+
+function zerodim2nothing(t::NamedTuple)
+    (
+        graphs=t.graphs,
+        ef=iszero(size(t.ef,1)) ? nothing : t.ef,
+        nf=iszero(size(t.nf,1)) ? nothing : t.nf,
+        gf=iszero(size(t.gf,1)) ? nothing : t.gf,
+    )
 end

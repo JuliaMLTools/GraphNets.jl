@@ -1,6 +1,55 @@
 using GraphNets
 using Test
 
+
+@testset "no graph features output" begin
+
+    # Setup
+    X_DE = 10 # Input feature dimension of edges
+    X_DN = 5 # Input feature dimension of nodes
+    X_DG = 0 # Input feature dimension of graphs (no graph level input data)
+    Y_DE = 3 # Output feature dimension of edges
+    Y_DN = 4 # Output feature dimension of nodes
+    Y_DG = 0 # Output feature dimension of graphs
+    
+    block = GNBlock(
+        (X_DE,X_DN,X_DG) => (Y_DE,Y_DN,Y_DG)
+    )
+    adj_mat = [
+        1 0 1;
+        1 1 0;
+        0 0 1;
+    ] # Adjacency matrix
+
+    num_nodes = size(adj_mat, 1)
+    num_edges = length(filter(isone, adj_mat))
+
+    batch_size = 2
+    edge_features = rand(Float32, X_DE, num_edges, batch_size)
+    node_features = rand(Float32, X_DN, num_nodes, batch_size)
+    graph_features = nothing # no graph level input features
+
+    x = (
+        graphs=adj_mat, # All graphs in this batch have same structure
+        ef=edge_features, # (X_DE, num_edges, batch_size)
+        nf=node_features, # (X_DN, num_nodes, batch_size)
+        gf=graph_features # (X_DG, batch_size)
+    ) |> batch
+
+    y = block(x) |> unbatch
+
+    @test size(y.ef) == (Y_DE, num_edges, batch_size)
+    @test size(y.nf) == (Y_DN, num_nodes, batch_size)
+    @test isnothing(y.gf)
+
+    # Get the output graph edges of the 1st graph
+    @test size(y.ef[:,:,1]) == (Y_DE, num_edges)
+
+    # Get the output node edges of the 1st graph
+    @test size(y.nf[:,:,1]) == (Y_DN, num_nodes)
+    
+end
+
 @testset verbose = true "Readme Examples" begin
 
     # Setup
