@@ -66,8 +66,12 @@ end
 gettargetgraph(sample) # Renders in VSCode
 # write("./target.svg", gettargetgraph(sample))
 
-SVG([getinputgraph(sample), gettargetgraph(sample)])
-# write("./in_out.svg", SVG([getinputgraph(sample), gettargetgraph(sample)]))
+function showsample(sample)
+    SVG([getinputgraph(sample), gettargetgraph(sample)])
+end
+
+showsample(sample)
+# write("./sample.svg", showsample(sample))
 
 ###########################
 # Batch generator
@@ -135,7 +139,7 @@ function (m::GNModel)(xs, targets=nothing)
         
         loss = loss_nodes + loss_edges
     end
-    ŷ, loss
+    (graph=ŷ, loss=loss)
 end
 
 ##########################
@@ -181,3 +185,13 @@ model = cpu(testmode!(model))
 x, y = getbatch(1) .|> cpu
 ŷ_batched, loss = model(x, y)
 ŷ = ŷ_batched |> unbatch
+decoded = (
+    x = (;
+        nodes = Flux.onecold(x.nf)[:]
+    ),
+    y = (
+        nodes = Flux.onecold(ŷ.nf, 0:1)[:],
+        edges = Flux.onecold(ŷ.ef, 0:1)[:],
+    )
+)
+showsample(decoded)
