@@ -6,10 +6,4 @@ using BenchmarkTools
 using CUDA
 using Random
 using ProgressMeter
-
-#Graph Visualization
-using Graphs
-using GraphPlot
-using Graphs: smallgraph
-import Cairo, Fontconfig
-#using LightGraphs
+include("helper.jl")

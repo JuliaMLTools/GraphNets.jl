@@ -4,198 +4,171 @@ Pkg.activate(".")
 include("imports.jl")
 Random.seed!(1234)
 
-#####################################################
+##########################
 # Create a sample graph with input/output features
-#####################################################
+##########################
 
-n = 6 # number of nodes
-adj_mat = ones(Int, n, n) # fully connect graph
-num_edges = length(filter(isone, adj_mat))
-x_nf = rand(1:100, n) # Sample input node features
-y_nf = Int.(x_nf .== minimum(x_nf)) # Sample output node features
-y_ef = rand(0:1, num_edges) # Output edge features
-
-
-#####################################################
-# (Optional) Use JuliaMLTools/EuclidGraphs.jl to visualize the input and output graphs
-#####################################################
-using EuclidGraphs
-pentagon = [(0,-10),(0,70),(75,21),(49,-70),(-49,-70),(-75,21)] # XY coordinates of a pentagon
-x_graph = EuclidGraph(pentagon, adj_mat=adj_mat)
-x_graph() # Renders in VSCode
-# write("input-graph.svg", x_graph())
-num_edges = length(filter(isone, adj_mat))
-num_nodes = size(adj_mat, 1)
-node_features = zeros(Int, num_nodes)
-node_features[rand(1:num_nodes)] = 1
-y_graph = EuclidGraph(
-    pentagon,
-    adj_mat=adj_mat,
-    node_style=(node) -> NodeStyle(
-        inner_fill=("green"),
-        stroke="#ccc",
-        value=(node) -> nothing,
-    ),
-    edge_style=(edge) -> EdgeStyle(
-        stroke=(isone(edge.features[edge.idx]) ? "green" : "#ccc"),
-    )
-)
-y_graph(node_features, y_ef) # Renders in VSCode
-# write("output-graph.svg", g2(node_features, edge_features))
-
-
-# batch_size = 64 # how many independent sequences will we process in parallel?
-# block_size = 256 # what is the maximum context length for predictions?
-# max_iters = 2000
-# eval_interval = 500
-# learning_rate = 3e-4
-# eval_iters = 200
-# n_embd = 384
-# n_head = 6
-# head_size = n_embd ÷ n_head
-# inv_sqrt_dₖ = Float32(1 / sqrt(head_size))
-# n_layer = 6
-# dropout = 0.2
-# device = CUDA.functional() ? gpu : cpu
-
-data = rand(1:100, 20_000) # generate some random data
-n = Int(round(0.9*length(data))) # 90% of data will be train
-train_data = data[1:n] # first 90% will be train
-val_data = data[n+1:end] # last 10% will be validation
-
-function getbatch(split)
-    # generate a small batch of data of inputs x and targets y
-    data = split == "train" ? train_data : val_data
-    ix = rand(1:(length(data) - block_size), batch_size)
-    x_nodes = reduce(hcat, [data[i:i+block_size-1] for i in ix])
-    x_nodes_sorted = reduce(hcat, map(sort, eachcol(x_nodes)))
-    x_nodes_min = reduce(hcat, map(minimum, eachcol(x_nodes_sorted)))
-    y_nodes = broadcast(==, x_nodes_min, x_nodes)
-    y_edges = reduce(hcat, getedgetargets.(eachcol(x_nodes)))
+function gensample()
+    n = rand(5:5) # number of nodes
+    adj_mat = ones(Int, n, n) # fully connected graph
+    num_edges = length(filter(isone, adj_mat))
+    x_nf = rand(1:100, n) # Sample input node features
+    y_nf = Int.(x_nf .== minimum(x_nf)) # Sample output node features
+    y_ef = getedgetargets(x_nf) # Output edge features
     (
-        (; nodes=x_nodes),
-        (nodes=y_nodes, edges=y_edges),
+        adj_mat=adj_mat, 
+        x=(; nodes=x_nf),
+        y=(nodes=y_nf, edges=y_ef)
     )
 end
 
-struct GNModel{N,E,C,D} 
-    node_embedding_table::N
-    encoder::E
-    core::C
-    decoder::D
+sample = gensample()
+
+##########################
+# (Optional) Use EuclidGraphs.jl to visualize the input and target output graphs
+##########################
+
+using EuclidGraphs
+
+function getinputgraph(sample)
+    (; nodes) = sample.x
+    n = length(nodes)
+    g = EuclidGraph(
+        ngon(n),
+        fully_connected=true, 
+        node_style=(node) -> NodeStyle(
+            value=(node) -> node.features[node.idx],
+        ),
+    )
+    g(nodes)
+end
+
+getinputgraph(sample) # Renders in VSCode
+# write("./input.svg", getinputgraph(sample.x.nodes))
+
+function gettargetgraph(sample)
+    (; nodes, edges) = sample.y
+    n = length(nodes)
+    g = EuclidGraph(
+        ngon(n),
+        adj_mat=reshape(edges, n, n),
+        node_style=(node) -> NodeStyle(
+            stroke=(isone(node.features[node.idx]) ? "green" : "#ccc"),
+            value=(node) -> nothing
+        ),
+        edge_style=(edge) -> EdgeStyle(
+            stroke="green",
+        )
+    )
+    g(nodes, edges)
+end
+
+gettargetgraph(sample) # Renders in VSCode
+# write("./target.svg", gettargetgraph(sample))
+
+SVG([getinputgraph(sample), gettargetgraph(sample)])
+# write("./in_out.svg", SVG([getinputgraph(sample), gettargetgraph(sample)]))
+
+
+###########################
+# Batch generator
+###########################
+
+vocab_size = 100 # Maximum integer to be sorted
+device = CUDA.functional() ? gpu : cpu
+
+function getbatch(batch_size)
+    samples = [gensample() for _ in 1:batch_size]
+    x = (
+        graphs=[s.adj_mat for s in samples],
+        ef=nothing, 
+        nf=[Flux.onehotbatch(s.x.nodes, 1:vocab_size) for s in samples],
+        gf=nothing
+    ) |> batch |> device
+    target = (
+        graphs=[s.adj_mat for s in samples],
+        ef=[Flux.onehotbatch(s.y.edges, 0:1) for s in samples],
+        nf=[Flux.onehotbatch(s.y.nodes, 0:1) for s in samples],
+        gf=nothing,
+    ) |> batch |> device
+    x, target
+end
+
+
+##########################
+# Define the GraphNet GNN
+##########################
+
+struct GNModel
+    encoder
+    core
+    decoder
 end
 
 Functors.@functor GNModel
 
-function GNModel(from_to::Pair, core_dims, vocab_size; n_core_blocks=2)
+function GNModel(from_to::Pair, core_dims; n_core_blocks=2)
     x_dims, y_dims = from_to
     _, x_dn, _ = x_dims
     GNModel(
-        Embedding(vocab_size => x_dn),
         GNBlock(x_dims => core_dims),
         GNCoreList([GNCore(core_dims) for _ in 1:n_core_blocks]),
         GNBlock(core_dims => y_dims),
     )
 end
 
-function (m::GNModel)(graphs, idx, targets=nothing)
-    x = (
-        graphs = graphs,
-        ef = nothing,
-        nf = m.node_embedding_table(idx.nodes),
-        gf = nothing,
-    )
-    encoded = m.encoder(x)
+function (m::GNModel)(xs, targets=nothing)
+    encoded = m.encoder(xs)
     x1 = m.core(encoded)
-    y = m.decoder(x1)
-    logits = (
-        edge_logits = y.ef,
-        node_logits = y.nf,
-    )
+    ŷ = m.decoder(x1)
     if isnothing(targets)
         loss = nothing
     else
-        DN, T, B = size(logits.node_logits)
+        DN, T, B = size(ŷ.nf)
         
-        node_logits_reshaped = reshape(logits.node_logits, DN*T*B)
-        node_targets_reshaped = reshape(targets.nodes, T*B)
-        loss_nodes = Flux.logitbinarycrossentropy(node_logits_reshaped, node_targets_reshaped)
+        node_logits_reshaped = reshape(ŷ.nf, DN, T*B)
+        node_targets_reshaped = reshape(targets.nf, DN, T*B)
+        loss_nodes = Flux.logitcrossentropy(node_logits_reshaped, node_targets_reshaped)
 
-        DE, T, B = size(logits.edge_logits)
-        edge_logits_reshaped = reshape(logits.edge_logits, DE*T*B)
-        edge_targets_reshaped = reshape(targets.edges, T*B)
-        loss_edges = Flux.logitbinarycrossentropy(edge_logits_reshaped, edge_targets_reshaped)
+        DE, T, B = size(ŷ.ef)
+        edge_logits_reshaped = reshape(ŷ.ef, DE, T*B)
+        edge_targets_reshaped = reshape(targets.ef, DE, T*B)
+        loss_edges = Flux.logitcrossentropy(edge_logits_reshaped, edge_targets_reshaped)
         
         loss = loss_nodes + loss_edges
     end
-    (logits=logits, loss=loss)
+    ŷ, loss
 end
 
 
+##########################
+# Init model and run sample
+##########################
 
-block_size = 10
 batch_size = 2
-
-function getedgetargets(node_idx)
-    n = length(node_idx)
-
-    node_idx_idx = collect(zip(1:n, node_idx))
-    sorted = first.(sort(node_idx_idx; lt=(a,b)->last(a) < last(b)))
-    enabled_edges = collect(zip(sorted[1:end-1], sorted[2:end]))
-    # @show node_idx
-    # @show node_idx_idx
-    # @show sorted
-    # @show enabled_edges
-    edge_targets_mat = zeros(Int, n, n)
-    for (i,j) in enabled_edges
-        edge_targets_mat[i,j] = 1
-    end
-    edge_targets = edge_targets_mat[:]
-    # display(edge_targets_mat)
-
-    edge_targets
-end
-
-
-getbatch("train")
-
-Random.seed!(1234)
-
-vocab_size = 100 # Maximum integer to be sorted
-
-# Let's overfit the network on a single example to start
-N = 10
-x_idx = rand(1:vocab_size, N, 2) # Unsorted integers
-y_idx = sort(x_idx) # Sorted integers
-adj_mat = ones(N, N) # Fully connected graph
-adj_mats = [adj_mat] # Just one graph in the batch
-G = length(adj_mats) # number of graphs
-
-x_dims = (0,256,0)
+x_dims = (0,vocab_size,0)
 core_dims = (384,384,384)
-y_dims = (1,1,0)
+y_dims = (2,2,0)
+model = GNModel(x_dims=>y_dims, core_dims) |> device
+sample_x, sample_target = getbatch(batch_size)
+model(sample_x, sample_target)
 
-model = GNModel(x_dims=>y_dims, core_dims, vocab_size)
-logits, loss = model(GNGraphBatch(adj_mats), x_idx)
-logits.edge_logits
-logits.node_logits
 
-x, y = getbatch("train")
-logits, loss = model(GNGraphBatch(adj_mats), x, y)
-model(GNGraphBatch(adj_mats), x).logits.node_logits
+##########################
+# Setup hyperparameters and train
+##########################
 
 learning_rate = 3e-4
 optim = Flux.setup(Flux.AdamW(learning_rate), model)
 dropout = 0
-max_iters = 10_000
+max_iters = 20_000
 
 function train!(model)
-    graphs = GNGraphBatch(adj_mats)
     trainmode!(model)
     @showprogress for iter in 1:max_iters
-        xb, yb = getbatch("train")
+        xb, yb = getbatch(batch_size)
         loss, grads = Flux.withgradient(model) do m
-            m(graphs, xb, yb).loss
+            m(xb, yb).loss
         end
         Flux.update!(optim, model, grads[1])
     end
@@ -204,9 +177,12 @@ end
 
 train!(model)
 
-x, y = getbatch("valid")
-logits, loss = model(GNGraphBatch(adj_mats), x, y)
-reshape(sigmoid(model(GNGraphBatch(adj_mats), x).logits.node_logits), 10, 2)
-reshape(Int.(round.(sigmoid(model(GNGraphBatch(adj_mats), x).logits.edge_logits))), 10, 10, 2)
 
+##########################
+# Check results
+##########################
 
+model = cpu(testmode!(model))
+x, y = getbatch(1) .|> cpu
+ŷ_batched, loss = model(x, y)
+ŷ = ŷ_batched |> unbatch
