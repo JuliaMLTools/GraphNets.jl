@@ -13,19 +13,35 @@ function checks(adj_mats::AbstractVector, ef, nf, gf)
     end
     checkshapes2d(ef, nf, gf)
     # Check node/edge counts
-    for (adj_mat, ef_i, nf_i) in zip(adj_mats, ef, nf)
-        checknodeedgecounts(adj_mat, ef_i, nf_i)
-    end
+    checknodeedgecounts(adj_mats, ef, nf)
 end
 
 ############################
 # Check node/edge counts
 ############################
 
+function checknodeedgecounts(adj_mats::AbstractVector, ef, nf)
+    for (adj_mat, ef_i, nf_i) in zip(adj_mats, ef, nf)
+        checknodeedgecounts(adj_mat, ef_i, nf_i)
+    end
+end
+
+function checknodeedgecounts(adj_mats::AbstractVector, ef::Nothing, nf)
+    for (adj_mat, nf_i) in zip(adj_mats, nf)
+        checknodeedgecounts(adj_mat, nothing, nf_i)
+    end
+end
+
+function checknodeedgecounts(adj_mats::AbstractVector, ef, nf::Nothing)
+    for (adj_mat, ef_i) in zip(adj_mats, ef)
+        checknodeedgecounts(adj_mat, ef_i, nothing)
+    end
+end
+
 function checknodeedgecounts(adj_mat, ef, nf)
     num_nodes = size(adj_mat, 1)
     num_edges = length(filter(isone, adj_mat))
-    @assert size(ef, 2) == num_edges
+    @assert size(ef, 2) == num_edges "$(size(ef, 2)) != num_edges"
     @assert size(nf, 2) == num_nodes "$(size(nf, 2)) != $num_nodes"
 end
 function checknodeedgecounts(adj_mat, ef, nf::Nothing)
@@ -81,7 +97,7 @@ function checkshapes2d(ef, nf, gf)
 end
 function checkshapes2d(ef, nf, gf::Nothing)
     for (ef_i, nf_i) in zip(ef, nf)
-        @assert ndims(ef_i) == ndims(nf_i) == 2 # (C, T)
+        @assert ndims(ef_i) == ndims(nf_i) == 2 "!($(ndims(ef_i)) == $(ndims(nf_i)) == 2)" # (C, T)
     end
 end
 function checkshapes2d(ef, nf::Nothing, gf)
@@ -103,7 +119,7 @@ function checkshapes2d(ef::Nothing, nf, gf)
 end
 function checkshapes2d(ef::Nothing, nf, gf::Nothing)
     for nf_i in nf
-        @assert ndims(nf_i) == 2 # (C, T)
+        @assert ndims(nf_i) == 2 "$(ndims(nf_i)) != 2" # (C, T)
     end
 end
 function checkshapes2d(ef::Nothing, nf::Nothing, gf)
