@@ -69,7 +69,6 @@ gettargetgraph(sample) # Renders in VSCode
 SVG([getinputgraph(sample), gettargetgraph(sample)])
 # write("./in_out.svg", SVG([getinputgraph(sample), gettargetgraph(sample)]))
 
-
 ###########################
 # Batch generator
 ###########################
@@ -93,7 +92,6 @@ function getbatch(batch_size)
     ) |> batch |> device
     x, target
 end
-
 
 ##########################
 # Define the GraphNet GNN
@@ -140,7 +138,6 @@ function (m::GNModel)(xs, targets=nothing)
     ŷ, loss
 end
 
-
 ##########################
 # Init model and run sample
 ##########################
@@ -152,7 +149,6 @@ y_dims = (2,2,0)
 model = GNModel(x_dims=>y_dims, core_dims) |> device
 sample_x, sample_target = getbatch(batch_size)
 model(sample_x, sample_target)
-
 
 ##########################
 # Setup hyperparameters and train
@@ -176,7 +172,6 @@ function train!(model)
 end
 
 train!(model)
-
 
 ##########################
 # Check results
