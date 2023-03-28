@@ -7,6 +7,7 @@ Random.seed!(1234)
 ##########################
 # Create a sample graph with input/output features
 ##########################
+vocab_size = 100 # Maximum integer to be sorted
 
 function gensample()
     n = rand(5:5) # number of nodes
@@ -17,67 +18,14 @@ function gensample()
     y_ef = getedgetargets(x_nf) # Output edge features
     (
         adj_mat=adj_mat, 
-        x=(; nodes=x_nf),
-        y=(nodes=y_nf, edges=y_ef)
+        x=(; nf=Flux.onehotbatch(x_nf, 1:vocab_size)),
+        y=(nf=Flux.onehotbatch(y_nf, 0:1), ef=Flux.onehotbatch(y_ef, 0:1))
     )
 end
-
-sample = gensample()
-
-##########################
-# (Optional) Use EuclidGraphs.jl to visualize the input and target output graphs
-##########################
-
-using EuclidGraphs
-
-function getinputgraph(sample)
-    (; nodes) = sample.x
-    n = length(nodes)
-    g = EuclidGraph(
-        ngon(n),
-        fully_connected=true, 
-        node_style=(node) -> NodeStyle(
-            value=(node) -> node.features[node.idx],
-        ),
-    )
-    g(nodes)
-end
-
-getinputgraph(sample) # Renders in VSCode
-# write("./input.svg", getinputgraph(sample.x.nodes))
-
-function gettargetgraph(sample)
-    (; nodes, edges) = sample.y
-    n = length(nodes)
-    g = EuclidGraph(
-        ngon(n),
-        adj_mat=reshape(edges, n, n),
-        node_style=(node) -> NodeStyle(
-            stroke=(isone(node.features[node.idx]) ? "green" : "#ccc"),
-            value=(node) -> nothing
-        ),
-        edge_style=(edge) -> EdgeStyle(
-            stroke="green",
-        )
-    )
-    g(nodes, edges)
-end
-
-gettargetgraph(sample) # Renders in VSCode
-# write("./target.svg", gettargetgraph(sample))
-
-function showsample(sample)
-    SVG([getinputgraph(sample), gettargetgraph(sample)])
-end
-
-showsample(sample)
-# write("./sample.svg", showsample(sample))
 
 ###########################
-# Batch generator
+# Training batch generator
 ###########################
-
-vocab_size = 100 # Maximum integer to be sorted
 device = CUDA.functional() ? gpu : cpu
 
 function getbatch(batch_size)
@@ -85,13 +33,13 @@ function getbatch(batch_size)
     x = (
         graphs=[s.adj_mat for s in samples],
         ef=nothing, 
-        nf=[Flux.onehotbatch(s.x.nodes, 1:vocab_size) for s in samples],
+        nf=[s.x.nf for s in samples],
         gf=nothing
     ) |> batch |> device
     target = (
         graphs=[s.adj_mat for s in samples],
-        ef=[Flux.onehotbatch(s.y.edges, 0:1) for s in samples],
-        nf=[Flux.onehotbatch(s.y.nodes, 0:1) for s in samples],
+        ef=[s.y.ef for s in samples],
+        nf=[s.y.nf for s in samples],
         gf=nothing,
     ) |> batch |> device
     x, target
@@ -100,7 +48,6 @@ end
 ##########################
 # Define the GraphNet GNN
 ##########################
-
 struct GNModel
     encoder
     core
@@ -143,21 +90,31 @@ function (m::GNModel)(xs, targets=nothing)
 end
 
 ##########################
-# Init model and run sample
+# Init untrained model and show sample
 ##########################
-
 batch_size = 2
 x_dims = (0,vocab_size,0)
 core_dims = (384,384,384)
 y_dims = (2,2,0)
 model = GNModel(x_dims=>y_dims, core_dims) |> device
-sample_x, sample_target = getbatch(batch_size)
-model(sample_x, sample_target)
+
+function showsample(model)
+    cpu_model = model |> cpu
+    x, y = getbatch(1) .|> cpu
+    ŷ_batched, loss = cpu_model(x, y)
+    ŷ = ŷ_batched |> unbatch
+    SVG([
+        getinputgraph(x), 
+        gettargetgraph(y),
+        gettargetgraph(ŷ),
+    ], dims=2)
+end
+
+showsample(model)
 
 ##########################
 # Setup hyperparameters and train
 ##########################
-
 learning_rate = 3e-4
 optim = Flux.setup(Flux.AdamW(learning_rate), model)
 dropout = 0
@@ -180,18 +137,4 @@ train!(model)
 ##########################
 # Check results
 ##########################
-
-model = cpu(testmode!(model))
-x, y = getbatch(1) .|> cpu
-ŷ_batched, loss = model(x, y)
-ŷ = ŷ_batched |> unbatch
-decoded = (
-    x = (;
-        nodes = Flux.onecold(x.nf)[:]
-    ),
-    y = (
-        nodes = Flux.onecold(ŷ.nf, 0:1)[:],
-        edges = Flux.onecold(ŷ.ef, 0:1)[:],
-    )
-)
-showsample(decoded)
+showsample(model)
