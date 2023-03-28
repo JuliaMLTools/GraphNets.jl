@@ -102,11 +102,10 @@ function showsample(model)
     x, y = getbatch(1) .|> cpu
     ŷ_batched, loss = cpu_model(x, y)
     ŷ = ŷ_batched |> unbatch
-    SVG([
-        getinputgraph(x), 
-        gettargetgraph(y),
-        gettargetgraph(ŷ),
-    ], dims=2)
+    x = SVG([SVGText("X"), getinputgraph(x)])
+    y = SVG([SVGText("Y"), gettargetgraph(y)])
+    ŷ = SVG([SVGText("Ŷ"), gettargetgraph(ŷ)])
+    SVG([x,y,ŷ], dims=2)
 end
 
 showsample(model)
