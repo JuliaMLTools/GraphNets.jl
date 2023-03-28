@@ -1,4 +1,4 @@
-struct GNGraphBatch{A,P,SN2E,DN2E,G2E,E2N,G2N,E2G,N2G,EB,NB}
+struct GNGraphBatch{A,P,SN2E,DN2E,G2E,E2N,G2N,E2G,N2G,EB,NB,FNU,FEU}
     adj_mats::A
     padded_adj_mats::P # (PN,PN,B)
     srcnode2edge_broadcaster::SN2E # (PN, PN^2, B)
@@ -10,6 +10,8 @@ struct GNGraphBatch{A,P,SN2E,DN2E,G2E,E2N,G2N,E2G,N2G,EB,NB}
     node2graph_broadcaster::N2G #
     edge_block_size::EB
     node_block_size::NB
+    flat_node_unpadder::FNU
+    flat_edge_unpadder::FEU
 end
 
 Functors.@functor GNGraphBatch (
@@ -20,6 +22,8 @@ Functors.@functor GNGraphBatch (
     graph2node_broadcaster,
     edge2graph_broadcaster,
     node2graph_broadcaster,
+    flat_node_unpadder,
+    flat_edge_unpadder,
 )
 
 function GNGraphBatch(adj_mats)
@@ -38,7 +42,32 @@ function GNGraphBatch(adj_mats)
         getnode2graphbroadcaster(adj_mats, node_block_size),
         edge_block_size,
         node_block_size,
+        getflatnodeunpadder(adj_mats, node_block_size),
+        getflatedgeunpadder(adj_mats, edge_block_size),
     )
+end
+
+function getflatnodeunpadder(adj_mats, PN)
+    B = length(adj_mats)
+    mask = zeros(Bool, B*PN)
+    for (i, adj_mat) in enumerate(adj_mats)
+        num_nodes = size(adj_mat, 1)
+        s = 1 + PN*(i-1)
+        e = s + num_nodes - 1
+        mask[s:e] .= 1
+    end
+    mask
+end
+
+function getflatedgeunpadder(adj_mats, PE)
+    B = length(adj_mats)
+    mask = zeros(Bool, B*PE)
+    for (i, adj_mat) in enumerate(adj_mats)
+        s = 1 + PE*(i-1)
+        e = s + length(adj_mat) - 1
+        mask[s:e] .= view(adj_mat, :)
+    end
+    mask
 end
 
 function getedge2graphbroadcaster(adj_mats, PN)
@@ -48,7 +77,7 @@ function getedge2graphbroadcaster(adj_mats, PN)
     for (graph_idx, adj_mat) in enumerate(adj_mats)
         N = size(adj_mat, 1)
         N2 = N^2
-        m[1:N2, 1, graph_idx] .= adj_mat[:]
+        m[1:N2, 1, graph_idx] .= view(adj_mat, :)
     end
     m
 end

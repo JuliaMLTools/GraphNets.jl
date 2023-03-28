@@ -10,7 +10,7 @@ Random.seed!(1234)
 vocab_size = 100 # Maximum integer to be sorted
 
 function gensample()
-    n = rand(5:5) # number of nodes
+    n = rand(2:10) # number of nodes
     adj_mat = ones(Int, n, n) # fully connected graph
     num_edges = length(filter(isone, adj_mat))
     x_nf = rand(1:100, n) # Sample input node features
@@ -73,31 +73,30 @@ function (m::GNModel)(xs, targets=nothing)
     if isnothing(targets)
         loss = nothing
     else
-        DN, T, B = size(ŷ.nf)
-        
-        node_logits_reshaped = reshape(ŷ.nf, DN, T*B)
-        node_targets_reshaped = reshape(targets.nf, DN, T*B)
-        loss_nodes = Flux.logitcrossentropy(node_logits_reshaped, node_targets_reshaped)
-
-        DE, T, B = size(ŷ.ef)
-        edge_logits_reshaped = reshape(ŷ.ef, DE, T*B)
-        edge_targets_reshaped = reshape(targets.ef, DE, T*B)
-        loss_edges = Flux.logitcrossentropy(edge_logits_reshaped, edge_targets_reshaped)
-        
+        loss_nodes = Flux.logitcrossentropy(flatunpaddednf(ŷ), flatunpaddednf(targets))
+        loss_edges = Flux.logitcrossentropy(flatunpaddedef(ŷ), flatunpaddedef(targets))
         loss = loss_nodes + loss_edges
     end
     (graph=ŷ, loss=loss)
 end
 
 ##########################
-# Init untrained model and show sample
+# Init untrained model
 ##########################
-batch_size = 2
 x_dims = (0,vocab_size,0)
 core_dims = (384,384,384)
 y_dims = (2,2,0)
 model = GNModel(x_dims=>y_dims, core_dims) |> device
 
+##########################
+# Ensure model runs on a batch
+##########################
+x, y = getbatch(2)
+y_batched, loss = model(x,y)
+
+##########################
+# Show a training sample and the output
+##########################
 function showsample(model)
     cpu_model = model |> cpu
     x, y = getbatch(1) .|> cpu
@@ -115,6 +114,7 @@ showsample(model)
 ##########################
 # Setup hyperparameters and train
 ##########################
+batch_size = 4
 learning_rate = 3e-4
 optim = Flux.setup(Flux.AdamW(learning_rate), model)
 dropout = 0

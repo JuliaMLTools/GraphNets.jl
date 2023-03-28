@@ -47,7 +47,7 @@ include("gngraphnorm.jl")
 #export GNGraphNorm
 
 include("views.jl")
-export efview, nfview, gfview
+export efview, nfview, gfview, flatunpaddednf, flatunpaddedef
 
 import SnoopPrecompile
 include("other/precompile.jl")

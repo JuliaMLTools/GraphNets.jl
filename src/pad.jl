@@ -47,7 +47,7 @@ end
 
 function padef(adj_mats::AbstractVector, efs::AbstractVector)
     padded_adj_mats = padadjmats(adj_mats)
-    reduce(
+    padded = reduce(
         (a,b)->cat(a,b,dims=3),
         map(
             pair->begin
@@ -57,6 +57,10 @@ function padef(adj_mats::AbstractVector, efs::AbstractVector)
             zip(eachslice(padded_adj_mats; dims=3), efs),
         )
     )
+    if ndims(padded) == 2
+        return Flux.unsqueeze(padded, 3)
+    end
+    padded
 end
 
 padgf(adj_mats::AbstractMatrix, gf) = reshape(gf, :, 1, size(gf, 2)) # (D, 1, B)

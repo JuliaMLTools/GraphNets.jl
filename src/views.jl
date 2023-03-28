@@ -76,3 +76,23 @@ gfview(::GNGraphBatch, ::Nothing, d1, d2) = nothing
 function gfview(graphs::GNGraphBatch, gf, d1, d2)
     @view gf[d1, 1, d2]
 end
+
+function flatunpaddednf(t::NamedTuple)
+    flatunpaddednf(t.graphs, t.nf)
+end
+
+function flatunpaddednf(graphs, nf)
+    DN, T, B = size(nf)
+    flat = reshape(nf, DN, T*B)
+    @view flat[:, graphs.flat_node_unpadder]
+end
+
+function flatunpaddedef(t::NamedTuple)
+    flatunpaddedef(t.graphs, t.ef)
+end
+
+function flatunpaddedef(graphs, ef)
+    DE, T, B = size(ef)
+    flat = reshape(ef, DE, T*B)
+    @view flat[:, graphs.flat_edge_unpadder]
+end
