@@ -178,6 +178,21 @@ y = block(x) |> unbatch
 @assert size(y.gf) == (Y_DG, batch_size)
 ```
 
+## Installation
+
+The package can be installed with the Julia package manager.
+From the Julia REPL, type `]` to enter the Pkg REPL mode and run:
+
+```
+pkg> add GraphNets
+```
+
+Or, equivalently, via the `Pkg` API:
+
+```julia
+julia> import Pkg; Pkg.add("GraphNets")
+```
+
 ## Project Status
 
 The package is tested against, and being developed for, Julia `1.8` and above on Linux, macOS, and Windows.
