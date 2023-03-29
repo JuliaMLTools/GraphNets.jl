@@ -4,7 +4,7 @@
 CurrentModule = GraphNets
 ```
 
-### Simple, blazing fast, graph neural network components.
+### Simple, blazing fast, message-passing graph neural network.
 
 GraphNets.jl is a Julia implementation of DeepMind's [Graph Nets](https://github.com/deepmind/graph_nets) and an implementation of the following paper:
 [Relational inductive biases, deep learning, and graph networks](https://arxiv.org/abs/1806.01261)
