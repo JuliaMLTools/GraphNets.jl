@@ -57,3 +57,11 @@ end
 function getgraphfeatures(adj_mats, graph_idx, batched_gf)
     batched_gf[:,1,graph_idx]
 end
+
+# Flux.Dense fix
+# Note: please see the following for details:
+# https://discourse.julialang.org/t/inconsistent-matrix-multiply-output-from-flux-dense-depending-on-shape-of-input/104116/10
+# function (d::Dense)(x::AbstractArray)
+#     Flux._size_check(d, x, 1 => size(d.weight, 2))
+#     d.σ.(batched_mul(d.weight, x) .+ d.bias) 
+# end

@@ -35,10 +35,10 @@ function GNGraphBatch(adj_mats)
         padded_adj_mats,
         getsrcnode2edgebroadcaster(padded_adj_mats),
         getdstnode2edgebroadcaster(padded_adj_mats),
-        getgraph2edgebroadcaster(padded_adj_mats),
+        getgraph2edgebroadcaster(padded_adj_mats, edge_block_size),
         getedge2nodebroadcaster(padded_adj_mats),
-        getgraph2nodebroadcaster(padded_adj_mats),
-        getedge2graphbroadcaster(adj_mats, node_block_size),
+        getgraph2nodebroadcaster(adj_mats, node_block_size),
+        getedge2graphbroadcaster(padded_adj_mats, node_block_size),
         getnode2graphbroadcaster(adj_mats, node_block_size),
         edge_block_size,
         node_block_size,
@@ -70,14 +70,14 @@ function getflatedgeunpadder(adj_mats, PE)
     mask
 end
 
-function getedge2graphbroadcaster(adj_mats, PN)
-    B = length(adj_mats)
+function getedge2graphbroadcaster(padded_adj_mats, PN)
+    B = size(padded_adj_mats, 3)
     PN2 = PN^2
     m = zeros(Float32, PN2, 1, B)
-    for (graph_idx, adj_mat) in enumerate(adj_mats)
-        N = size(adj_mat, 1)
+    for (graph_idx, padded_adj_mat) in enumerate(eachslice(padded_adj_mats, dims=3))
+        N = size(padded_adj_mat, 1)
         N2 = N^2
-        m[1:N2, 1, graph_idx] .= view(adj_mat, :)
+        m[1:N2, 1, graph_idx] .= view(padded_adj_mat, :)
     end
     m
 end
@@ -106,15 +106,26 @@ function getedge2nodebroadcaster(padded_adj_mats)
     m
 end
 
-function getgraph2nodebroadcaster(padded_adj_mats)
-    PN,_,B = size(padded_adj_mats)
-    ones(Float32, 1, PN, B)
+function getgraph2nodebroadcaster(adj_mats, node_block_size)
+    reduce(
+        (a,b)->cat(a,b; dims=3), 
+        map(adj_mats) do adj_mat
+            m = zeros(Float32, 1, node_block_size)
+            m[1:size(adj_mat,1)] .= 1
+            m
+        end
+    )
 end
 
-function getgraph2edgebroadcaster(padded_adj_mats)
-    PN,_,B = size(padded_adj_mats)
-    PN2 = PN^2
-    ones(Float32, 1, PN2, B)
+function getgraph2edgebroadcaster(padded_adj_mats, edge_block_size)
+    reduce(
+        (a,b)->cat(a,b; dims=3), 
+        map(eachslice(padded_adj_mats, dims=3)) do padded_adj_mat
+            m = zeros(Float32, 1, edge_block_size)
+            m[findall(isone, reshape(padded_adj_mat, :))] .= 1
+            m
+        end
+    )
 end
 
 getsrcnode2edgebroadcaster(padded_adj_mats) = getnode2edgebroadcaster(padded_adj_mats)

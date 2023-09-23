@@ -23,19 +23,19 @@ include("pad.jl")
 include("unpad.jl")
 
 include("edgefninput.jl")
-#export getedgefninput
+export getedgefninput
 
 include("nodefninput.jl")
-#export getnodefninput
+export getnodefninput
 
 include("graphfninput.jl")
-#export getgraphfninput
+export getgraphfninput
 
 include("gnfeedforward.jl")
 #export GNFeedForward
 
 include("gnblock.jl")
-export GNBlock
+export GNBlock, zerodim2nothing
 
 include("gncore.jl")
 export GNCore

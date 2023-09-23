@@ -1,6 +1,61 @@
 using GraphNets
 using Test
 
+@testset "GNBlock batch invariance" begin    
+    in_dims = (X_DE, X_DN, X_DG) = (0, 2, 0)
+    core_dims = (2,2,2)
+    out_dims = (Y_DE, Y_DN, Y_DG) = (2,2,2)
+    
+    encoder = GNBlock(in_dims => core_dims)
+    decoder = GNBlock(core_dims => out_dims)
+
+    block(x) = (decoder ∘ encoder)(x)
+
+    adj_mat_A  = [
+        1 1;
+        1 1;
+    ]
+    adj_mat_B = [
+        1 1 1;
+        1 1 1;
+        1 1 1;
+    ]
+    num_nodes_A = size(adj_mat_A, 1)
+    num_edges_A = length(filter(isone, adj_mat_A))
+    num_nodes_B = size(adj_mat_B, 1)
+    num_edges_B = length(filter(isone, adj_mat_B))
+    batch_size = 2
+    
+    node_features = [rand(Float32, X_DN, num_nodes_A), rand(Float32, X_DN, num_nodes_B)]
+
+    x_1batch = (
+        graphs=[adj_mat_A], # All graphs in this batch have same structure
+        ef=nothing,
+        nf=node_features[1:1],
+        gf=nothing # no input graph features
+    ) |> batch
+    ŷ_1batch = block(x_1batch)
+    nf_1batch_1 = nfview(ŷ_1batch, :, :, 1)
+    ef_1batch_1 = efview(ŷ_1batch, :, :, 1)
+    gf_1batch_1 = gfview(ŷ_1batch, :, 1)
+
+    x_nbatch = (
+        graphs=[adj_mat_A, adj_mat_B], # All graphs in this batch have same structure
+        ef=nothing,
+        nf=node_features[:],
+        gf=nothing # no input graph features
+    ) |> batch
+    ŷ_nbatch = block(x_nbatch)
+    nf_nbatch_1 = nfview(ŷ_nbatch, :, :, 1)
+    ef_nbatch_1 = efview(ŷ_nbatch, :, :, 1)
+    gf_nbatch_1 = gfview(ŷ_nbatch, :, 1)
+
+    @test size(nf_1batch_1) == size(nf_nbatch_1)
+    @test size(ef_1batch_1) == size(ef_nbatch_1)
+    @test all(nf_1batch_1 .≈ nf_nbatch_1)
+    @test all(ef_1batch_1 .≈ ef_nbatch_1)
+    @test all(gf_1batch_1 .≈ gf_nbatch_1)
+end
 
 @testset "no graph features output" begin
 
