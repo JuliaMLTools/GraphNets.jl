@@ -1,6 +1,64 @@
 using GraphNets
 using Test
 
+@testset "Test edge collapsing" begin  
+    in_dims = (X_DE, X_DN, X_DG) = (0, 2, 0)
+    core_dims = (2,2,2)
+    out_dims = (Y_DE, Y_DN, Y_DG) = (2,2,2)
+    
+    encoder = GNBlock(in_dims => core_dims)
+    decoder = GNBlock(core_dims => out_dims)
+
+    block(x) = (decoder ∘ encoder)(x)
+
+    adj_mat_A  = [
+        1 1;
+        1 1;
+    ]
+    adj_mat_B = [
+        1 1 1;
+        1 1 1;
+        1 1 1;
+    ]
+    num_nodes_A = size(adj_mat_A, 1)
+    num_edges_A = length(filter(isone, adj_mat_A))
+    num_nodes_B = size(adj_mat_B, 1)
+    num_edges_B = length(filter(isone, adj_mat_B))
+    batch_size = 2
+    
+    node_features = [rand(Float32, X_DN, num_nodes_A), rand(Float32, X_DN, num_nodes_B)]
+
+    x_nbatch = (
+        graphs=[adj_mat_A, adj_mat_B], # All graphs in this batch have same structure
+        ef=nothing,
+        nf=node_features[:],
+        gf=nothing # no input graph features
+    ) |> batch
+    
+    ŷ_nbatch = block(x_nbatch)
+    collapsed_flat = flatunpaddedcollapsedef(ŷ_nbatch)
+    
+    @test all(collapsed_flat[:,1] .≈ ŷ_nbatch.ef[:,1,1])
+    @test all(collapsed_flat[:,2] .≈ (ŷ_nbatch.ef[:,2,1] + ŷ_nbatch.ef[:,4,1])/2)
+    @test all(collapsed_flat[:,3] .≈ ŷ_nbatch.ef[:,5,1])
+
+    @test all(collapsed_flat[:,4] .≈ ŷ_nbatch.ef[:,1,2])
+    @test all(collapsed_flat[:,5] .≈ (ŷ_nbatch.ef[:,2,2] + ŷ_nbatch.ef[:,4,2])/2)
+    @test all(collapsed_flat[:,6] .≈ (ŷ_nbatch.ef[:,3,2] + ŷ_nbatch.ef[:,7,2])/2)
+    @test all(collapsed_flat[:,7] .≈ ŷ_nbatch.ef[:,5,2])
+    @test all(collapsed_flat[:,8] .≈ (ŷ_nbatch.ef[:,6,2] + ŷ_nbatch.ef[:,8,2])/2)
+    @test all(collapsed_flat[:,9] .≈ ŷ_nbatch.ef[:,9,2])
+
+    # (
+    #     graph=ŷ_nbatch,
+    #     ef=ŷ_nbatch.ef,
+    #     collapser=ŷ_nbatch.graphs.edge_collapser,
+    #     collapsed_ef=collapsef(ŷ_nbatch),
+    #     collapsed_flat=collapsed_flat,
+    # )
+end
+# (; graph, ef, collapser, collapsed_ef, collapsed_flat) = testcollapsedeges()
+
 @testset "GNBlock batch invariance" begin    
     in_dims = (X_DE, X_DN, X_DG) = (0, 2, 0)
     core_dims = (2,2,2)

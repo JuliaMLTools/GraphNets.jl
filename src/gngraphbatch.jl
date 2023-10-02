@@ -1,4 +1,4 @@
-struct GNGraphBatch{A,P,SN2E,DN2E,G2E,E2N,G2N,E2G,N2G,EB,NB,FNU,FEU}
+struct GNGraphBatch{A,P,SN2E,DN2E,G2E,E2N,G2N,E2G,N2G,EB,NB,FNU,FEU,EC}
     adj_mats::A
     padded_adj_mats::P # (PN,PN,B)
     srcnode2edge_broadcaster::SN2E # (PN, PN^2, B)
@@ -12,6 +12,7 @@ struct GNGraphBatch{A,P,SN2E,DN2E,G2E,E2N,G2N,E2G,N2G,EB,NB,FNU,FEU}
     node_block_size::NB
     flat_node_unpadder::FNU
     flat_edge_unpadder::FEU
+    edge_collapser::EC
 end
 
 Functors.@functor GNGraphBatch (
@@ -24,6 +25,7 @@ Functors.@functor GNGraphBatch (
     node2graph_broadcaster,
     flat_node_unpadder,
     flat_edge_unpadder,
+    edge_collapser,
 )
 
 function GNGraphBatch(adj_mats)
@@ -44,6 +46,47 @@ function GNGraphBatch(adj_mats)
         node_block_size,
         getflatnodeunpadder(adj_mats, node_block_size),
         getflatedgeunpadder(adj_mats, edge_block_size),
+        getedgecollapser(node_block_size),
+    )
+end
+
+function getlowertriangularcoords(m)
+    filter(idx -> idx[1] >= idx[2], CartesianIndices(m))
+end
+
+function getedgecollapser(node_block_size)
+    n = node_block_size
+    m = reshape(1:(n^2), n, n)
+    lower_tri_coords = getlowertriangularcoords(m)
+    reduce(
+        hcat,
+        map(lower_tri_coords) do coord
+            i,j = coord[1],coord[2]
+            copy = zeros(eltype(m), size(m))
+            copy[i,j] += 1
+            copy[j,i] += 1
+            view(copy, :)
+        end
+    )
+end
+
+function collapsef(graph::NamedTuple)
+    batched_mul(graph.ef, graph.graphs.edge_collapser) / Float32(2)
+end
+
+function flatunpaddedcollapsedef(graph::NamedTuple)
+    collapsed_ef = collapsef(graph)
+    adj_mats = graph.graphs.adj_mats
+    num_graphs = length(adj_mats)
+    padded_adj_mats = padadjmats(adj_mats)
+    reduce(
+        hcat,
+        map(1:num_graphs) do graph_idx
+            padded_adj_mat = @view padded_adj_mats[:, :, graph_idx]
+            lower_tri_coords = getlowertriangularcoords(padded_adj_mat)
+            collapsed_idxs = findall(isone, padded_adj_mat[lower_tri_coords])
+            @view collapsed_ef[:, collapsed_idxs, graph_idx]
+        end
     )
 end
 
