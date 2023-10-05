@@ -13,6 +13,7 @@ SnoopPrecompile = "66db9d55-30c0-4569-8b51-7e840670fc0c"
 Flux = "0.13"
 Functors = "0.4"
 SnoopPrecompile = "1"
+Plots = "1"
 julia = "1.8"
 
 [extras]
