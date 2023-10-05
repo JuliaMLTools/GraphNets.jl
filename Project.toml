@@ -1,7 +1,7 @@
 name = "GraphNets"
 uuid = "9052fb24-8e06-4531-a321-89bd3c4584f9"
 authors = ["Julia MLTools <juliamltools@gmail.com>"]
-version = "0.1.6"
+version = "0.1.7"
 
 [deps]
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
