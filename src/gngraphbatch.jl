@@ -57,13 +57,11 @@ function getlowertriangularcoords(m)
     filter(idx -> idx[1] >= idx[2], CartesianIndices(m))
 end
 
-function getcollapsededgeidxs(padded_adj_mat)
-    lower_tri_coords = getlowertriangularcoords(padded_adj_mat)
-    findall(isone, padded_adj_mat[lower_tri_coords])
-end
-
-function getcollapsededgeidxs(padded_adj_mats::Vector)
-    getcollapsededgeidxs.(padded_adj_mats)
+function getcollapsededgeidxs(padded_adj_mats)
+    map(eachslice(padded_adj_mats, dims=3)) do padded_adj_mat
+        lower_tri_coords = getlowertriangularcoords(padded_adj_mat)
+        findall(isone, padded_adj_mat[lower_tri_coords])
+    end
 end
 
 function getedgecollapser(node_block_size)
@@ -99,13 +97,11 @@ function unpaddedcollapsedef(collapsed_efs, collapsed_idxs::Vector{<:Integer})
     end
 end
 
-function unpaddedcollapsedef(collapsed_idxs_list::Vector{<:Vector})
-    map(
-        zip(
+function unpaddedcollapsedef(collapsed_efs, collapsed_idxs_list::Vector{<:Vector})
+    map(zip(
             eachslice(collapsed_efs, dims=3), 
             collapsed_idxs_list,
-        )
-        ) do (collapsed_ef, collapsed_idxs)
+        )) do (collapsed_ef, collapsed_idxs)
         @view collapsed_ef[:, collapsed_idxs]
     end
 end
