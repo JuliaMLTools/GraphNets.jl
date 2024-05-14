@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>GraphNets.jl · GraphNets.jl</title><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href><img src="assets/logo.png" alt="GraphNets.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href>GraphNets.jl</a></span></div><form class="docs-search" action="search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>GraphNets.jl</a><ul class="internal"><li><a class="tocitem" href="#Setup"><span>Setup</span></a></li><li><a class="tocitem" href="#API-index"><span>API index</span></a></li><li><a class="tocitem" href="#Components"><span>Components</span></a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>GraphNets.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>GraphNets.jl</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/main/docs/src/index.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="GraphNets.jl"><a class="docs-heading-anchor" href="#GraphNets.jl">GraphNets.jl</a><a id="GraphNets.jl-1"></a><a class="docs-heading-anchor-permalink" href="#GraphNets.jl" title="Permalink"></a></h1><h3 id="Simple,-blazing-fast,-message-passing-graph-neural-network."><a class="docs-heading-anchor" href="#Simple,-blazing-fast,-message-passing-graph-neural-network.">Simple, blazing fast, message-passing graph neural network.</a><a id="Simple,-blazing-fast,-message-passing-graph-neural-network.-1"></a><a class="docs-heading-anchor-permalink" href="#Simple,-blazing-fast,-message-passing-graph-neural-network." title="Permalink"></a></h3><p>GraphNets.jl is a Julia implementation of DeepMind&#39;s <a href="https://github.com/deepmind/graph_nets">Graph Nets</a> and an implementation of the following paper: <a href="https://arxiv.org/abs/1806.01261">Relational inductive biases, deep learning, and graph networks</a></p><p>Petar Veličković gives a fantastic explanation of the Graph Nets architecture and graph neural networks in general in the lecture below.</p><iframe style="width:100%;height:500px" src="https://www.youtube.com/embed/i79ewWQiUX4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe><h2 id="Setup"><a class="docs-heading-anchor" href="#Setup">Setup</a><a id="Setup-1"></a><a class="docs-heading-anchor-permalink" href="#Setup" title="Permalink"></a></h2><pre><code class="language-julia hljs">using GraphNets
+
+X_DE = 10 # Input feature dimension of edges
+X_DN = 5 # Input feature dimension of nodes
+X_DG = 0 # Input feature dimension of graphs (no graph level input data)
+Y_DE = 3 # Output feature dimension of edges
+Y_DN = 4 # Output feature dimension of nodes
+Y_DG = 5 # Output feature dimension of graphs
+
+block = GNBlock(
+    (X_DE,X_DN,X_DG) =&gt; (Y_DE,Y_DN,Y_DG)
+)</code></pre><h3 id="Example-1:-Batch-of-graphs-with-same-structure-(same-adjacency-matrix)"><a class="docs-heading-anchor" href="#Example-1:-Batch-of-graphs-with-same-structure-(same-adjacency-matrix)">Example 1: Batch of graphs with same structure (same adjacency matrix)</a><a id="Example-1:-Batch-of-graphs-with-same-structure-(same-adjacency-matrix)-1"></a><a class="docs-heading-anchor-permalink" href="#Example-1:-Batch-of-graphs-with-same-structure-(same-adjacency-matrix)" title="Permalink"></a></h3><pre><code class="language-julia hljs">adj_mat = [
+    1 0 1;
+    1 1 0;
+    0 0 1;
+] # Adjacency matrix
+
+num_nodes = size(adj_mat, 1)
+num_edges = length(filter(isone, adj_mat))
+
+batch_size = 2
+edge_features = rand(Float32, X_DE, num_edges, batch_size)
+node_features = rand(Float32, X_DN, num_nodes, batch_size)
+graph_features = nothing # no graph level input features
+
+x = (
+    graphs=adj_mat, # All graphs in this batch have same structure
+    ef=edge_features, # (X_DE, num_edges, batch_size)
+    nf=node_features, # (X_DN, num_nodes, batch_size)
+    gf=graph_features # (X_DG, batch_size)
+) |&gt; batch
+
+y = block(x) |&gt; unbatch
+
+@assert size(y.ef) == (Y_DE, num_edges, batch_size)
+@assert size(y.nf) == (Y_DN, num_nodes, batch_size)
+@assert size(y.gf) == (Y_DG, batch_size)
+
+# Get the output graph edges of the 1st graph
+@assert size(y.ef[:,:,1]) == (Y_DE, num_edges)
+
+# Get the output node edges of the 1st graph
+@assert size(y.nf[:,:,1]) == (Y_DN, num_nodes)
+
+# Get the output graph edges of the 2nd graph
+@assert size(y.gf[:,2]) == (Y_DG,)</code></pre><h3 id="Example-2:-Batch-of-graphs-with-different-structures"><a class="docs-heading-anchor" href="#Example-2:-Batch-of-graphs-with-different-structures">Example 2: Batch of graphs with different structures</a><a id="Example-2:-Batch-of-graphs-with-different-structures-1"></a><a class="docs-heading-anchor-permalink" href="#Example-2:-Batch-of-graphs-with-different-structures" title="Permalink"></a></h3><pre><code class="language-julia hljs">adj_mat_1 = [
+    1 0 1;
+    1 1 0;
+    0 0 1;
+] # Adjacency matrix 1
+num_nodes_1 = size(adj_mat_1, 1)
+num_edges_1 = length(filter(isone, adj_mat_1))
+
+adj_mat_2 = [
+    1 0 1 0;
+    1 1 0 1;
+    0 0 1 0;
+    1 1 0 1;
+] # Adjacency matrix 2
+num_nodes_2 = size(adj_mat_2, 1)
+num_edges_2 = length(filter(isone, adj_mat_2))
+
+edge_features = [
+    rand(Float32, X_DE, num_edges_1),
+    rand(Float32, X_DE, num_edges_2),
+]
+node_features = [
+    rand(Float32, X_DN, num_nodes_1),
+    rand(Float32, X_DN, num_nodes_2),
+]
+graph_features = nothing # no graph level input features
+
+x = (
+    graphs=[adj_mat_1,adj_mat_2],  # Graphs in this batch have different structure
+    ef=edge_features, 
+    nf=node_features,
+    gf=graph_features
+) |&gt; batch
+
+y_batched = block(x)
+y = y_batched |&gt; unbatch
+
+# Memory-efficient view of features for a batch with different graph structures
+@assert size(efview(y_batched, :, :, 1)) == (Y_DE, num_edges_1) # edge features for graph 1
+@assert size(nfview(y_batched, :, :, 1)) == (Y_DN, num_nodes_1)  # edge features for graph 1
+@assert size(gfview(y_batched, :, 1)) == (Y_DG,) # graph features for graph 1
+@assert size(efview(y_batched, :, :, 2)) == (Y_DE, num_edges_2) # edge features for graph 2
+@assert size(nfview(y_batched, :, :, 2)) == (Y_DN, num_nodes_2) # node features for graph 2
+@assert size(gfview(y_batched, :, 2)) == (Y_DG,) # graph features for graph 2
+
+# Copied array of features (less efficient) for a batch with different graph structures
+@assert size(y.ef[1]) == (Y_DE, num_edges_1) # edge features for graph 1
+@assert size(y.nf[1]) == (Y_DN, num_nodes_1)  # edge features for graph 1
+@assert size(y.gf[1]) == (Y_DG,) # graph features for graph 1
+@assert size(y.ef[2]) == (Y_DE, num_edges_2) # edge features for graph 2
+@assert size(y.nf[2]) == (Y_DN, num_nodes_2) # node features for graph 2
+@assert size(y.gf[2]) == (Y_DG,) # graph features for graph 2</code></pre><h3 id="Example-3:-Encoder-Core-Decoder-(sequential-blocks)"><a class="docs-heading-anchor" href="#Example-3:-Encoder-Core-Decoder-(sequential-blocks)">Example 3: Encoder -&gt; Core -&gt; Decoder (sequential blocks)</a><a id="Example-3:-Encoder-Core-Decoder-(sequential-blocks)-1"></a><a class="docs-heading-anchor-permalink" href="#Example-3:-Encoder-Core-Decoder-(sequential-blocks)" title="Permalink"></a></h3><pre><code class="language-julia hljs">input_dims = (X_DE, X_DN, X_DG)
+core_dims = (10, 5, 3)
+output_dims = (Y_DE, Y_DN, Y_DG)
+
+struct GNNModel{E,C,D}
+    encoder::E
+    core_list::C
+    decoder::D
+end
+
+function GNNModel(; n_cores=2)
+    GNNModel(
+        GNBlock(input_dims =&gt; core_dims),
+        GNCoreList([GNCore(core_dims) for _ in 1:n_cores]),
+        GNBlock(core_dims =&gt; output_dims),
+    )
+end
+
+function (m::GNNModel)(x)
+    (m.decoder ∘ m.core_list ∘ m.encoder)(x)
+end
+
+m = GNNModel()
+
+adj_mat = [
+    1 0 1;
+    1 1 0;
+    0 0 1;
+]
+
+num_nodes = size(adj_mat, 1)
+num_edges = length(filter(isone, adj_mat))
+
+batch_size = 2
+edge_features = rand(Float32, X_DE, num_edges, batch_size)
+node_features = rand(Float32, X_DN, num_nodes, batch_size)
+graph_features = nothing # no graph level input features
+
+x = (
+    graphs=adj_mat, # All graphs in this batch have same structure
+    ef=edge_features, # (X_DE, num_edges, batch_size)
+    nf=node_features, # (X_DN, num_nodes, batch_size)
+    gf=graph_features # (X_DG, batch_size)
+) |&gt; batch
+
+y = block(x) |&gt; unbatch
+
+@assert size(y.ef) == (Y_DE, num_edges, batch_size)
+@assert size(y.nf) == (Y_DN, num_nodes, batch_size)
+@assert size(y.gf) == (Y_DG, batch_size)</code></pre><h2 id="API-index"><a class="docs-heading-anchor" href="#API-index">API index</a><a id="API-index-1"></a><a class="docs-heading-anchor-permalink" href="#API-index" title="Permalink"></a></h2><ul><li><a href="#GraphNets.GNBlock"><code>GraphNets.GNBlock</code></a></li><li><a href="#GraphNets.GNCore"><code>GraphNets.GNCore</code></a></li><li><a href="#GraphNets.GNCoreList"><code>GraphNets.GNCoreList</code></a></li><li><a href="#GraphNets.batch"><code>GraphNets.batch</code></a></li><li><a href="#GraphNets.efview"><code>GraphNets.efview</code></a></li><li><a href="#GraphNets.gfview"><code>GraphNets.gfview</code></a></li><li><a href="#GraphNets.nfview"><code>GraphNets.nfview</code></a></li><li><a href="#GraphNets.unbatch"><code>GraphNets.unbatch</code></a></li></ul><h2 id="Components"><a class="docs-heading-anchor" href="#Components">Components</a><a id="Components-1"></a><a class="docs-heading-anchor-permalink" href="#Components" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="GraphNets.GNBlock" href="#GraphNets.GNBlock"><code>GraphNets.GNBlock</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">GNBlock(in =&gt; out;  dropout=0)</code></pre><p>Initializes an instance of the <strong><code>GNBlock</code></strong> type, representing a GraphNet block.</p><p>The following keyword arguments are supported:</p><ul><li><code>dropout</code> (Defaults to 0)</li></ul><p><strong>Example:</strong></p><pre><code class="language-julia hljs">in_dims = (X_DE, X_DN, X_DG) = 10, 5, 0
+out_dims = (Y_DE, Y_DN, Y_DG) = 3, 4, 5
+block = GNBlock(in_dims =&gt; out_dims)
+adj_mat = adj_mat = [
+    1 0 1;
+    1 1 0;
+    0 0 1;
+]
+num_nodes = size(adj_mat, 1)
+num_edges = length(filter(isone, adj_mat))
+batch_size = 2
+edge_features = rand(Float32, X_DE, num_edges, batch_size)
+node_features = rand(Float32, X_DN, num_nodes, batch_size)
+graph_features = nothing # no graph level input features
+x = (
+    graphs=adj_mat, # All graphs in this batch have same structure
+    ef=edge_features, # (X_DE, num_edges, batch_size)
+    nf=node_features, # (X_DN, num_nodes, batch_size)
+    gf=graph_features # no input graph features
+) |&gt; batch
+y = block(x) |&gt; unbatch
+@assert size(y.ef) == (Y_DE, num_edges, batch_size)
+@assert size(y.nf) == (Y_DN, num_nodes, batch_size)
+@assert size(y.gf) == (Y_DG, batch_size)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/d6863e43b23efdadee2395838f9bbc52c531db96/src/gnblock.jl#L10-L46">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.GNCore" href="#GraphNets.GNCore"><code>GraphNets.GNCore</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">GNCore(dims; dropout=0)</code></pre><p>Initializes an instance of the <strong><code>GNCore</code></strong> type, representing a GraphNet &quot;core&quot; block.</p><p>The following keyword arguments are supported:</p><ul><li><code>dropout</code> (Defaults to 0)</li></ul><p><strong>Example:</strong></p><pre><code class="language-julia hljs">dims = (DE, DN, DG) = 3, 4, 5
+core = GNCore(dims)
+adj_mat = adj_mat = [
+    1 0 1;
+    1 1 0;
+    0 0 1;
+]
+num_nodes = size(adj_mat, 1)
+num_edges = length(filter(isone, adj_mat))
+batch_size = 2
+edge_features = rand(Float32, DE, num_edges, batch_size)
+node_features = rand(Float32, DN, num_nodes, batch_size)
+graph_features = rand(Float32, DG, batch_size)
+x = (
+    graphs=adj_mat, # All graphs in this batch have same structure
+    ef=edge_features, # (DE, num_edges, batch_size)
+    nf=node_features, # (DN, num_nodes, batch_size)
+    gf=graph_features # no input graph features
+) |&gt; batch
+y = core(x) |&gt; unbatch
+@assert size(y.ef) == (DE, num_edges, batch_size)
+@assert size(y.nf) == (DN, num_nodes, batch_size)
+@assert size(y.gf) == (DG, batch_size)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/d6863e43b23efdadee2395838f9bbc52c531db96/src/gncore.jl#L10-L45">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.GNCoreList" href="#GraphNets.GNCoreList"><code>GraphNets.GNCoreList</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia hljs">GNCoreList(input_dim, num_heads; head_size=(input_dim ÷ num_heads), dropout=0)</code></pre><p>Initializes an instance of the <strong><code>GNCoreList</code></strong> type, representing a sequence of GraphNet core blocks composed together.</p><p>The following keyword arguments are supported:</p><ul><li><code>dropout</code> (Defaults to 0)</li></ul><p><strong>Example:</strong></p><pre><code class="language-julia hljs">dims = (DE, DN, DG) = 3, 4, 5
+core_list = GNCoreList([GNCore(dims), GNCore(dims)])
+adj_mat = adj_mat = [
+    1 0 1;
+    1 1 0;
+    0 0 1;
+]
+num_nodes = size(adj_mat, 1)
+num_edges = length(filter(isone, adj_mat))
+batch_size = 2
+edge_features = rand(Float32, DE, num_edges, batch_size)
+node_features = rand(Float32, DN, num_nodes, batch_size)
+graph_features = rand(Float32, DG, batch_size)
+x = (
+    graphs=adj_mat, # All graphs in this batch have same structure
+    ef=edge_features, # (DE, num_edges, batch_size)
+    nf=node_features, # (DN, num_nodes, batch_size)
+    gf=graph_features # no input graph features
+) |&gt; batch
+y = core_list(x) |&gt; unbatch
+@assert size(y.ef) == (DE, num_edges, batch_size)
+@assert size(y.nf) == (DN, num_nodes, batch_size)
+@assert size(y.gf) == (DG, batch_size)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/d6863e43b23efdadee2395838f9bbc52c531db96/src/gncorelist.jl#L1-L36">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.batch" href="#GraphNets.batch"><code>GraphNets.batch</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">batch(t::NamedTuple)</code></pre><p><strong>Example:</strong></p><pre><code class="language-julia hljs">dims = (DE, DN, DG) = 3, 4, 5
+core = GNCore(dims)
+adj_mat_1 = [
+    1 0 1;
+    1 1 0;
+    0 0 1;
+] # Adjacency matrix 1
+num_nodes_1 = size(adj_mat_1, 1)
+num_edges_1 = length(filter(isone, adj_mat_1))
+adj_mat_2 = [
+    1 0 1 0;
+    1 1 0 1;
+    0 0 1 0;
+    1 1 0 1;
+] # Adjacency matrix 2
+num_nodes_2 = size(adj_mat_2, 1)
+num_edges_2 = length(filter(isone, adj_mat_2))
+edge_features = [
+    rand(Float32, DE, num_edges_1),
+    rand(Float32, DE, num_edges_2),
+]
+node_features = [
+    rand(Float32, DN, num_nodes_1),
+    rand(Float32, DN, num_nodes_2),
+]
+graph_features = [
+    rand(Float32, DG),
+    rand(Float32, DG),
+]
+adj_mats = [adj_mat_1,adj_mat_2]
+batch_size = length(adj_mats)
+x = (
+    graphs=adj_mats,  # Graphs in this batch have different structure
+    ef=edge_features, 
+    nf=node_features,
+    gf=graph_features
+)
+x_batched = batch(x)
+edge_block_size = x_batched.graphs.edge_block_size
+node_block_size = x_batched.graphs.node_block_size
+@assert typeof(x_batched.graphs) == GraphNets.GNGraphBatch
+@assert size(x_batched.ef) == (DE, edge_block_size, batch_size)
+@assert size(x_batched.nf) == (DN, node_block_size, batch_size)
+@assert size(x_batched.gf) == (DG, 1, batch_size)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/d6863e43b23efdadee2395838f9bbc52c531db96/src/batch.jl#L1-L52">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.unbatch" href="#GraphNets.unbatch"><code>GraphNets.unbatch</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">unbatch(t::NamedTuple)</code></pre><p><strong><code>unbatch</code></strong> is the inverse of <strong><code>batch</code></strong>. It takes a batched tuple and returns a tuple of unbatched arrays.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/d6863e43b23efdadee2395838f9bbc52c531db96/src/unbatch.jl#L1-L5">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.efview" href="#GraphNets.efview"><code>GraphNets.efview</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">efview(t::NamedTuple, d1, d2, d3)</code></pre><p>Returns an array view of the edge features contained in the batched output.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/d6863e43b23efdadee2395838f9bbc52c531db96/src/views.jl#L1-L5">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.nfview" href="#GraphNets.nfview"><code>GraphNets.nfview</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">nfview(t::NamedTuple, d1, d2, d3)</code></pre><p>Returns an array view of the node features contained in the batched output.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/d6863e43b23efdadee2395838f9bbc52c531db96/src/views.jl#L33-L37">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="GraphNets.gfview" href="#GraphNets.gfview"><code>GraphNets.gfview</code></a> — <span class="docstring-category">Function</span></header><section><div><pre><code class="language-julia hljs">gfview(t::NamedTuple, d1, d2)</code></pre><p>Returns an array view of the graph features contained in the batched output.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaMLTools/GraphNets.jl/blob/d6863e43b23efdadee2395838f9bbc52c531db96/src/views.jl#L63-L67">source</a></section></article></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 14 May 2024 17:25">Tuesday 14 May 2024</span>. Using Julia version 1.10.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
