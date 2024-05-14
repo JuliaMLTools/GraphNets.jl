@@ -195,4 +195,4 @@ julia> import Pkg; Pkg.add("GraphNets")
 
 ## Project Status
 
-The package is tested against, and being developed for, Julia `1.8` and above on Linux, macOS, and Windows.
+The package is tested against, and being developed for, Julia `1.10` and above on Linux, macOS, and Windows.
