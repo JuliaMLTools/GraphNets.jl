@@ -2,6 +2,7 @@ using GraphNets
 using Functors
 using Flux
 using SparseArrays
+using cuDNN
 using CUDA
 using Random
 using ProgressMeter

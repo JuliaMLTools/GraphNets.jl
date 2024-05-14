@@ -49,7 +49,6 @@ include("gngraphnorm.jl")
 include("views.jl")
 export efview, nfview, gfview, flatunpaddednf, flatunpaddedef, collapsef, unpaddedcollapsedef, flatunpaddedcollapsedef
 
-import SnoopPrecompile
 include("other/precompile.jl")
 
 end

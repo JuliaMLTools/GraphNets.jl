@@ -1,4 +1,6 @@
 cd(@__DIR__)
+import Pkg
+Pkg.activate(".")
 using GraphNets
 
 X_DE = 10 # Input feature dimension of edges
